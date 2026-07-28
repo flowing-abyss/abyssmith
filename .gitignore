@@ -45,8 +45,8 @@ allure-results/
 .worktrees/
 .zed/
 
-.mcp.json
-AGENTS.md
+/.mcp.json
+/AGENTS.md
 CLAUDE.md
-opencode.json
+/opencode.json
 
