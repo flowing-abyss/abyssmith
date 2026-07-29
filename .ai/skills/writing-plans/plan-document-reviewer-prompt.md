@@ -1,5 +1,11 @@
 # Plan Document Reviewer Prompt Template
 
+**Optional, manual, high-assurance step.** `writing-plans`'s own inline
+Self-Review (see that skill's SKILL.md) is the default and is sufficient for
+normal work. Dispatch this separate subagent reviewer only when the plan is
+unusually high-stakes and warrants an independent second pass — this is not
+a required step in the standard planning → execution flow.
+
 Use this template when dispatching a plan document reviewer subagent.
 
 **Purpose:** Verify the plan is complete, matches the spec, and has proper task decomposition.
