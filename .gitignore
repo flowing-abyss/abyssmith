@@ -29,21 +29,26 @@ coverage/
 tests/e2e/wdio-logs/
 allure-results/
 
-# AI
-.a5c/
-.agent/
-.agents/
-.claude/
-.codegraph/
-.codex/
-.forge/
-.opencode/
-.pi-lens/
-.pi/
-.serena/
-.superpowers/
-.worktrees/
-.zed/
+# AI — anchored (leading /) so these only match the generated symlinks at
+# the repo root, not the real files nested under .ai/configs/ that share
+# the same directory names (e.g. .ai/configs/.claude/, .ai/configs/.codex/).
+# An earlier unanchored version of this block silently excluded those real
+# files from every commit — see .ai/setup.mjs and the AGENTS.md mirroring
+# it describes.
+/.a5c/
+/.agent/
+/.agents/
+/.claude/
+/.codegraph/
+/.codex/
+/.forge/
+/.opencode/
+/.pi-lens/
+/.pi/
+/.serena/
+/.superpowers/
+/.worktrees/
+/.zed/
 
 # Completion marker for the Stop-hook verify gate (.ai/hooks/verify-before-stop.mjs) —
 # created and consumed within a single session, never meant to persist.
