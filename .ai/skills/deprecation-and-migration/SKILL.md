@@ -7,9 +7,9 @@ description: Manages deprecation and migration. Use when removing old systems, A
 
 ## Where this sits in the workflow
 
-This skill is an entry point parallel to `brainstorming` for removal- or
-migration-shaped requests — it is not an alternative to `brainstorming` and
-`writing-plans`, and it does not go straight to implementation.
+This skill is an entry point parallel to `skill:brainstorming` for removal- or
+migration-shaped requests — it is not an alternative to `skill:brainstorming` and
+`skill:writing-plans`, and it does not go straight to implementation.
 
 ```text
 removal or migration request
@@ -22,7 +22,7 @@ removal or migration request
 
 Use this skill first to work out the replacement, affected consumers,
 compatibility period, rollout strategy, rollback, and removal criteria (the
-sections below). Then hand that to `brainstorming` as the input for design
+sections below). Then hand that to `skill:brainstorming` as the input for design
 approval, same as any other spec input — do not skip straight from this
 skill's decision to writing code.
 
@@ -109,7 +109,9 @@ Don't deprecate without a working alternative. The replacement must:
 ### Migration Guide
 1. Replace `import { client } from 'old-service'` with `import { client } from 'new-service'`
 2. Update configuration (see examples below)
-3. Run the migration verification script: `npx migrate-check`
+3. Run the migration verification script: `pnpm run migration:check` (a
+   project-defined package script — name it whatever this project's
+   `package.json` actually calls it, this is a placeholder)
 ```
 
 ### Step 3: Migrate Incrementally
@@ -201,7 +203,7 @@ the old one            the app                  a later, separate deploy
 4. **Switch reads.** Point the app at `full_name`, keep writing both. Deploy and bake.
 5. **Contract.** Stop writing `name`, then — in a *separate, later* deploy — drop the column.
 
-Each step is independently deployable and reversible: if step 4 misbehaves, roll the code back and `full_name` is still being populated. Treat each phase as a thin vertical slice — see the `incremental-implementation` skill.
+Each step is independently deployable and reversible: if step 4 misbehaves, roll the code back and `full_name` is still being populated. The underlying principle: migrations ship as small, independently verifiable phases, each one deployable and reversible on its own — destructive changes run only after the old form has genuinely stopped being used, and expand, backfill, switch, and contract are never collapsed into one irreversible step.
 
 **Rules:**
 - **Additive first, destructive last and alone.** Adds (new nullable column, new table, new index) are safe in any deploy; drops and renames get their own deploy *after* no code references the old shape.

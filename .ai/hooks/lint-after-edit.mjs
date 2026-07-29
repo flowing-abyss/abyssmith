@@ -5,6 +5,12 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 // Run a fast lint check after an agent edits or writes a file.
+//
+// Blocking classification: CONFIRMED on Claude Code/Codex (their own
+// documented PostToolUse `decision: "block"` contract). Best-effort on
+// OpenCode/Pi — see each adapter's own comment in
+// .ai/configs/.opencode/plugins/ai-hooks.js and
+// .ai/configs/.pi/extensions/pnpm-policy.ts for their actual contract.
 const projectRoot = resolveProjectRoot();
 const packageJsonPath = path.join(projectRoot, 'package.json');
 const lockfilePath = path.join(projectRoot, 'pnpm-lock.yaml');

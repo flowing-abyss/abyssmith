@@ -21,6 +21,19 @@ import path from 'node:path';
 // This hook only runs the gate when that marker exists, and always deletes
 // it immediately so a stale marker can't silently re-trigger the gate on a
 // later, unrelated stop.
+//
+// Per-harness blocking classification for this output's {decision:"block"}
+// (see .ai/hooks/capability-manifest.json and each adapter's own comment):
+// - Claude Code, Codex: CONFIRMED blocking — {decision:"block", reason} is
+//   the harness's own documented Stop-hook contract and actually halts the
+//   turn (observed directly: this repo's own development used it to catch
+//   a real verify failure at Stop time).
+// - OpenCode, Pi: their adapters only pass this result to `console.error`
+//   on the idle/settled event — NOTIFICATION-ONLY on those two, not a
+//   verified block. In all four cases, the primary completion guarantee is
+//   `finishing-a-development-branch` running `pnpm run verify` directly,
+//   before ever touching this marker — this hook is a backstop, weaker on
+//   OpenCode/Pi than on Claude Code/Codex, never the only line of defense.
 const input = await readStdinJson();
 
 // Avoid an infinite Stop-hook continuation loop.

@@ -2,10 +2,11 @@
 name: risk-based-verification
 description: >
   Identifies which risk categories apply to a change and records the required
-  checks as a compact section in the implementation plan. Use once, after
-  design/plan approval and before implementation. Complements Superpowers'
-  writing-plans, TDD, and verification-before-completion; does not replace
-  them or add a separate mandatory stage.
+  checks as a compact section in the implementation plan. Use after design
+  approval, during implementation-plan construction, before plan self-review
+  and execution handoff. Complements Superpowers' writing-plans, TDD, and
+  verification-before-completion; does not replace them or add a separate
+  mandatory stage.
 ---
 
 # Risk-Based Verification
@@ -22,14 +23,35 @@ standalone process stage every task goes through.
 Superpowers owns implementation planning, red-green-refactor, systematic
 debugging, and completion verification. This skill owns exactly one thing:
 deciding which risk categories apply to a change and what that implies for
-verification, then handing that decision to `writing-plans` to record.
+verification, then handing that decision to `skill:writing-plans` to record.
 
 ## When to run this
 
+```text
+design approved
+→ writing-plans starts building the implementation plan
+→ applicability pass for custom implementation skills (writing-plans)
+→ risk-based-verification, if it's one of the applicable skills
+→ result recorded in the plan (this skill's output)
+→ plan self-review (writing-plans)
+→ execution handoff
+```
+
+Run this **while the implementation plan is being built** — after the
+design/spec is approved (that's a `skill:brainstorming` output, not this skill's
+job), as part of the same pass that produces the plan, and finished before
+`skill:writing-plans`' Self-Review and execution handoff. It writes into the plan
+that's still being drafted, not into one that's already been handed off —
+there's no cycle where this skill reopens an approved plan.
+
 Once per plan (or per task, for a task with materially different risk from
-its siblings), after the design/plan is approved and before implementation
-starts. Re-check before claiming completion only if the implementation
-turned out to touch something the original risk pass didn't anticipate.
+its siblings). **Do not re-run it after the plan is approved and handed
+off** just because implementation is underway — that's scope the plan
+already fixed. The only exception: implementation turns up a risk the
+original pass didn't anticipate (a boundary the plan didn't know it would
+touch, a migration that turned out to be needed). In that case, update the
+plan's Risk-Based Verification section directly, don't restart the whole
+pass.
 
 ## The risk categories
 
@@ -47,7 +69,7 @@ Evaluate each briefly — most changes trigger zero or one of these:
 
 ## Output: a plan section, not a separate document
 
-Record the result directly in the implementation plan (see `writing-plans`'
+Record the result directly in the implementation plan (see `skill:writing-plans`'
 optional `Risk-Based Verification` task section). If no category applies
 beyond what normal unit/integration/completion verification already covers,
 write exactly this and stop — do not invent risk for a trivial change:

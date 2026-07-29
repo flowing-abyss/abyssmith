@@ -1,6 +1,6 @@
 ---
 name: source-driven-development
-description: Grounds every implementation decision in official documentation. Use when you want authoritative, source-cited code free from outdated patterns. Use when building with any framework or library where correctness matters.
+description: Grounds version-sensitive, unfamiliar, newly-introduced, deprecated, or compatibility-relevant framework/library decisions in official documentation. Not for code already established in the codebase, mechanical edits, or work fully defined by an approved Interfaces block.
 ---
 
 # Source-Driven Development
@@ -11,19 +11,27 @@ Every framework-specific code decision must be backed by official documentation.
 
 ## When to Use
 
-- The user wants code that follows current best practices for a given framework
-- Building boilerplate, starter code, or patterns that will be copied across a project
-- The user explicitly asks for documented, verified, or "correct" implementation
-- Implementing features where the framework's recommended approach matters (forms, routing, data fetching, state management, auth)
-- Reviewing or improving code that uses framework-specific patterns
-- Any time you are about to write framework-specific code from memory
+Required when at least one of these is true:
 
-**When NOT to use:**
+- the API involved is unfamiliar — not something already used correctly elsewhere in this codebase
+- correctness depends on the specific version in use (the pattern differs between versions)
+- a new dependency is being added
+- a library/framework upgrade or version migration is being performed
+- the API is deprecated, experimental, or otherwise unstable
+- the integration is security-sensitive
+- behavior depends on platform/runtime compatibility
+- the user explicitly asked for a documented or verified implementation
+- the existing code and the official documentation look genuinely incompatible (see Precedence below)
 
-- Correctness does not depend on a specific version (renaming variables, fixing typos, moving files)
-- Pure logic that works the same across all versions (loops, conditionals, data structures)
-- The user explicitly wants speed over verification ("just do it quickly")
-- The code is fully determined by an interface or contract already fixed elsewhere in the project (an approved plan's `Interfaces` block, an existing type definition) — implement to that, don't re-derive it from docs
+**Not required — do not activate for:**
+
+- any call to an Obsidian (or other) API already used correctly elsewhere in this codebase
+- mechanical edits (renaming, formatting, moving files)
+- local refactoring that doesn't change a contract
+- code fully determined by an approved plan's `Interfaces` block or an existing type definition — implement to that, don't re-derive it from docs
+- copying an existing, already-verified pattern from this project
+- pure business logic with no framework/library surface
+- the user explicitly wants speed over verification ("just do it quickly")
 
 ## Precedence
 
@@ -34,6 +42,8 @@ When official documentation, the approved spec/plan, and existing project code d
 3. **Documentation is for verifying API usage** — correct function signatures, current vs. deprecated methods, parameter shapes — not for overriding 1 or 2.
 
 Only surface a conflict when the documented API is genuinely incompatible with what's being built (a method was removed, a signature changed, a pattern is hard-deprecated with a stated removal date) — not merely because the docs show a newer style than the one already in use. "The docs demonstrate a different but equally valid approach" is not a conflict worth interrupting for.
+
+Documentation never gets to force a rewrite of an approved design on its own. If an approved plan requires an API that genuinely no longer exists or was removed, that's a blocker on the plan itself — raise it before implementing, the same way any other plan defect gets raised (see `skill:subagent-driven-development`'s conflict-with-plan-text handling). Don't quietly implement around it and don't quietly implement the plan's broken version either.
 
 ## The Process
 
@@ -134,17 +144,31 @@ Per Precedence, the approved spec/plan and existing project patterns still win f
 
 ### Step 4: Cite Your Sources
 
-Every framework-specific pattern gets a citation. The user must be able to verify every decision.
+The rule is narrower than "every framework-specific pattern": **every
+non-obvious, version-sensitive, newly introduced, deprecated, or
+compatibility-relevant framework decision must be supported by an official
+source.** A call to an API already established and working elsewhere in
+this codebase doesn't need a fresh citation just because it's
+framework-specific.
 
-**In code comments:**
+**Default citation location — not production code comments.** Citations
+belong in whichever of these is active for the current work:
 
-```typescript
-// React 19 form handling with useActionState
-// Source: https://react.dev/reference/react/useActionState#usage
-const [state, formAction, isPending] = useActionState(submitOrder, initialState);
+- the implementation plan's **Required sources** task section (see
+  `skill:writing-plans`), when working from a plan
+- the implementer's report, when working under `skill:subagent-driven-development`
+- the final answer back to the user, for inline/conversational work
+
+**In the plan or report:**
+
+```markdown
+**Required sources:**
+- react.dev/reference/react/useActionState#usage — React 19 replaced the
+  manual isPending/setIsPending pattern with this hook; used for the order
+  form's submission state.
 ```
 
-**In conversation:**
+**In conversation (no plan in play):**
 
 ```
 I'm using useActionState instead of manual useState for the
@@ -154,6 +178,20 @@ isPending/setIsPending pattern with this hook.
 Source: https://react.dev/blog/2024/12/05/react-19#actions
 "useTransition now supports async functions [...] to handle
 pending states automatically"
+```
+
+**A source URL belongs in a code comment only when it explains one of these** —
+not as a default habit:
+
+- a non-obvious compatibility workaround
+- a known platform limitation the code is working around
+- deliberate use of a non-standard or unexpected API
+- behavior a future reader could plausibly "simplify" into a bug
+
+```typescript
+// Obsidian's mobile WebView doesn't support the File System Access API —
+// falls back to vault.adapter instead of the browser-native picker.
+// Source: docs.obsidian.md/Plugins/Getting+started/Mobile+development
 ```
 
 **Citation rules:**
@@ -184,24 +222,28 @@ Honesty about what you couldn't verify is more valuable than false confidence.
 
 ## Red Flags
 
-- Writing framework-specific code without checking the docs for that version
+- Writing version-sensitive, unfamiliar, or deprecated-API code without checking the docs for that version
 - Using "I believe" or "I think" about an API instead of citing the source
 - Implementing a pattern without knowing which version it applies to
 - Citing Stack Overflow or blog posts instead of official documentation
 - Using deprecated APIs because they appear in training data
-- Not reading `package.json` / dependency files before implementing
-- Delivering code without source citations for framework-specific decisions
+- Adding a new dependency, or upgrading one, without checking its current docs
+- Delivering a version-sensitive or unfamiliar-API decision with no source recorded anywhere (plan, report, or final answer)
+- Adding a source URL to a production code comment for a call that isn't a compatibility workaround, platform limitation, deliberate non-standard usage, or "looks simplifiable" trap
 - Fetching an entire docs site when only one page is relevant
+- Treating a stylistic difference from current docs as a conflict with an approved plan or existing project pattern
 
 ## Verification
 
 After implementing with source-driven development:
 
+- [ ] This work actually met one of the "When to Use" triggers — not activated for a call already established elsewhere in the codebase or a mechanical edit
 - [ ] Framework and library versions were identified from the dependency file
-- [ ] Official documentation was fetched for framework-specific patterns
+- [ ] Official documentation was fetched for the version-sensitive/unfamiliar/deprecated patterns involved
 - [ ] All sources are official documentation, not blog posts or training data
 - [ ] Code follows the patterns shown in the current version's documentation
-- [ ] Non-trivial decisions include source citations with full URLs
+- [ ] Citations for non-trivial decisions landed in the plan's Required sources section, the implementer's report, or the final answer — not scattered into code comments by default
+- [ ] Any code-comment citation explains a real compatibility workaround, platform limitation, deliberate non-standard usage, or simplification trap — not routine API usage
 - [ ] No deprecated APIs are used (checked against migration guides)
-- [ ] Conflicts between docs and existing code were surfaced to the user
+- [ ] A genuine incompatibility between docs and an approved plan/existing pattern was raised as a blocker, not silently resolved either way
 - [ ] Anything that could not be verified is explicitly flagged as unverified
