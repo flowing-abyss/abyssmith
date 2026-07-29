@@ -14,6 +14,11 @@ jobs:
       attestations: write
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history (and tags) is required by the changelog-builder step below —
+          # a shallow checkout leaves it only the tagged commit itself, which it then
+          # misreads as the repo's root commit, producing an empty "no changes" log.
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v6
