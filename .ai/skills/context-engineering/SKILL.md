@@ -1,6 +1,6 @@
 ---
 name: context-engineering
-description: Optimizes agent context setup. Use when starting a new session, when agent output quality degrades, when switching between tasks, or when you need to configure rules files and context for a project.
+description: Optimizes agent context setup. Use when rules files are missing or need configuring, when agent output quality has visibly degraded, or when switching into an unfamiliar area of a codebase — not a default step at every session start.
 ---
 
 # Context Engineering
@@ -9,13 +9,16 @@ description: Optimizes agent context setup. Use when starting a new session, whe
 
 Feed agents the right information at the right time. Context is the single biggest lever for agent output quality — too little and the agent hallucinates, too much and it loses focus. Context engineering is the practice of deliberately curating what the agent sees, when it sees it, and how it's structured.
 
+This is a diagnostic and setup skill, not a step in the Superpowers build loop (`brainstorming` → `writing-plans` → implementation → `verification-before-completion` → `finishing-a-development-branch`). It doesn't run automatically at the start of every session, and it doesn't replace `brainstorming` or `writing-plans` for an actual task — see "Not a planning substitute" below.
+
 ## When to Use
 
-- Starting a new coding session
-- Agent output quality is declining (wrong patterns, hallucinated APIs, ignoring conventions)
-- Switching between different parts of a codebase
+- No rules file exists in the project, or the existing one needs updating
+- Agent output quality is visibly declining (wrong patterns, hallucinated APIs, ignoring conventions)
+- Switching into an unfamiliar area of the codebase where existing context doesn't cover the new area
 - Setting up a new project for AI-assisted development
-- The agent is not following project conventions
+
+Do not invoke this reflexively at the start of every session — only when one of the triggers above is actually true.
 
 ## The Context Hierarchy
 
@@ -236,19 +239,9 @@ C) Append a number suffix like "Task (2)" (most user-friendly)
 → Which behavior do you want?
 ```
 
-### The Inline Planning Pattern
+### Not a Planning Substitute
 
-For multi-step tasks, emit a lightweight plan before executing:
-
-```
-PLAN:
-1. Add Zod schema for task creation — validates title (required) and description (optional)
-2. Wire schema into POST /api/tasks route handler
-3. Add test for validation error response
-→ Executing unless you redirect.
-```
-
-This catches wrong directions before you've built on them. It's a 30-second investment that prevents 30-minute rework.
+This skill is about what the agent sees, not what it does next. For any actual multi-step task, use Superpowers' own process: `brainstorming` to reach an approved spec, then `writing-plans` for the implementation plan. Don't emit an ad hoc plan here instead of invoking those — a second, lighter-weight planning path defeats the plan review and task-decomposition discipline they provide.
 
 ## Anti-Patterns
 
