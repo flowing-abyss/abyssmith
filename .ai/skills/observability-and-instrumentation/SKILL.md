@@ -18,23 +18,91 @@ There's no server, no on-call, no metrics backend, no dashboards — a plugin ru
 
 ## Process
 
-### 1. Every user-triggered failure gets a `Notice()`, not a silent catch
+### 1. One user-facing error boundary per user-triggered operation, not a `Notice()` per `await`
+
+Every user-triggered operation (a command, a settings action, anything the
+user directly initiated) has **exactly one** layer responsible for turning
+a failure into a `Notice()`. That's normally the top of the call stack for
+that operation — the command handler, the button's click handler — not
+every function it calls along the way.
 
 ```typescript
-// BAD — user sees nothing, has no idea the folder was misconfigured
-try {
-  await loadFontsFrom(folder);
-} catch {}
-
-// GOOD — actionable, names the thing that broke
-try {
-  await loadFontsFrom(folder);
-} catch (error) {
-  new Notice(`Could not load fonts from "${folder}": ${error instanceof Error ? error.message : String(error)}`);
+// BAD — every layer shows its own Notice: one real failure, three toasts,
+// and the caller has no idea whether it's safe to treat this as handled
+async function loadFontsFrom(folder: string): Promise<void> {
+  try {
+    await this.app.vault.adapter.list(folder);
+  } catch (error) {
+    new Notice(`Could not read folder "${folder}"`); // boundary #1
+    throw error;
+  }
 }
+
+async function applyFontSettings(): Promise<void> {
+  try {
+    await loadFontsFrom(this.settings.fontFolder);
+  } catch (error) {
+    new Notice('Failed to apply font settings'); // boundary #2 — same failure, second toast
+  }
+}
+
+// GOOD — one boundary. The low-level function propagates (or rethrows with
+// context); only the command handler that started the operation shows a Notice.
+async function loadFontsFrom(folder: string): Promise<FileStat[]> {
+  // No try/catch here — this function can't fully recover from a missing
+  // folder, so it lets the error propagate to whoever called it.
+  return this.app.vault.adapter.list(folder);
+}
+
+async function applyFontSettings(): Promise<void> {
+  // No try/catch here either — same reasoning, one level further up.
+  await loadFontsFrom(this.settings.fontFolder);
+}
+
+// The command handler is the boundary: it's the only place that knows this
+// was a user-triggered action and is responsible for telling the user.
+this.addCommand({
+  id: 'apply-font-settings',
+  name: 'Apply font settings',
+  callback: async () => {
+    try {
+      await applyFontSettings();
+    } catch (error) {
+      new Notice(`Could not apply font settings: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  },
+});
 ```
 
-A `Notice()` is the plugin's entire "alerting" system. Word it like an on-call runbook line: name what was being attempted and what specifically failed — not just "An error occurred."
+A lower-level function has exactly three legitimate options when something
+fails, and none of them is "show a Notice and continue as if it worked":
+
+- **Propagate** — no `try`/`catch` at all; let the caller decide.
+- **Enrich and rethrow** — catch only to attach context the caller couldn't
+  reconstruct (which file, which setting), then `throw` again.
+- **Fully recover** — catch, handle it completely (a sensible default, a
+  retry that actually succeeds), and continue for real. If you can't
+  actually recover, this isn't the option — use one of the two above.
+
+Catching an error, showing a `Notice()`, and then returning as if the
+operation succeeded is never correct — the caller (and the user, past the
+toast) has no way to tell the operation didn't finish.
+
+A `Notice()` is the plugin's entire "alerting" system. Word it like an
+on-call runbook line: name what was being attempted and what specifically
+failed — not just "An error occurred."
+
+### Background operations without a direct user action
+
+A background operation (a periodic sync, a file-watcher callback) has no
+single user action to attribute a `Notice()` to, so it isn't required to
+show one on every failure. It still isn't allowed to fail silently:
+
+- update whatever visible state reflects it, if there is one (a status bar
+  item, a settings-tab indicator) — that's the equivalent of this
+  operation's error boundary;
+- log diagnostic detail (see below);
+- never just swallow the error and leave no trace anywhere.
 
 ### 2. `console.error`/`console.warn` for the part a Notice can't hold
 
@@ -63,11 +131,18 @@ Metrics, dashboards, distributed tracing, alerting/paging, SLOs, cardinality —
 - A `catch {}` with nothing inside it
 - A promise with no `.catch` in a place Vitest's unhandled-rejection reporting won't cover (see `test-driven-development` — but don't rely on tests catching every runtime path a real user hits)
 - An error message that's just the raw exception (`String(error)`) with no context about what the plugin was trying to do
+- More than one `Notice()` for the same failure — a sign the boundary isn't actually singular (a lower-level function is catching-and-toasting instead of propagating)
+- A `catch` that shows a `Notice()` and then lets execution continue as though the operation succeeded
+- `console.log`/`console.info` used as a substitute for a real `Notice()` on a user-triggered operation — the user isn't watching the console
 - Reaching for a network call, analytics SDK, or crash reporter to "get visibility" — that's the thing AGENTS.md already says not to do without disclosure
 
 ## Verification
 
-- [ ] Every `await` that touches the vault, filesystem, or network has a `catch` that shows the user a `Notice()`, not a silent failure
-- [ ] Notice text names what was attempted and what failed, not just "An error occurred"
-- [ ] Anything logged to console goes through `warn`/`error`/`debug` (not `log`), prefixed with the plugin id
+- [ ] Every user-triggered operation has exactly one identified user-facing error boundary — not zero, not one per layer it passes through
+- [ ] That boundary's `Notice()` names what was attempted and what failed, not just "An error occurred"
+- [ ] Lower-level functions propagate or enrich-and-rethrow errors they can't fully recover from — none of them catches, shows a `Notice()`, and returns normally
+- [ ] After an error, the code does not report or imply the operation succeeded
+- [ ] No silent `catch {}` and no unhandled promise rejection
+- [ ] Background operations with no direct user action update visible state (if any) and log diagnostics instead of failing silently — they aren't required to show a `Notice()`
+- [ ] Anything logged to console goes through `warn`/`error`/`debug` (not `log`), prefixed with the plugin id, with enough context (plugin id, the input that failed) to reproduce from a bug report
 - [ ] No new telemetry, analytics, or crash-reporting network call was added without the disclosure AGENTS.md requires
