@@ -92,26 +92,27 @@ include this section.]
   and return types. A task's implementer sees only their own task; this
   block is how they learn the names and types neighboring tasks use.]
 
-**Optional requirement sections** — include only the ones that actually
-apply to this task; a task with none of these needs is fine without them.
-This is how a custom skill's applicable findings reach the implementer and
-reviewer without either one having to re-run the skill's own routing logic:
+**Optional requirement sections** — filled in by the Applicability Pass
+below, once per plan; include only the ones that actually apply to this
+task, a task with none of these needs is fine without them. This is how a
+custom skill's applicable findings reach the implementer and reviewer
+without either one having to re-run the skill's own routing logic:
 
 - **Project-specific requirements:** constraints from project instructions
   or established patterns that bind this task specifically (beyond the
   plan's Global Constraints, which already apply to every task).
 - **Required sources:** for framework/library-specific work
-  (`source-driven-development`) — the exact doc pages consulted and the
+  (`skill:source-driven-development`) — the exact doc pages consulted and the
   pattern each one supports.
 - **Risk-based checks:** for behavior-changing work
-  (`risk-based-verification`) — copy the task-relevant lines from that
+  (`skill:risk-based-verification`) — copy the task-relevant lines from that
   skill's plan-level Risk-Based Verification section, or write "No elevated
   risks" if that's what applies here.
 - **Observability requirements:** for a task with a failure boundary
-  (`observability-and-instrumentation`) — what gets a `Notice()`, what goes
+  (`skill:observability-and-instrumentation`) — what gets a `Notice()`, what goes
   to console, confirmation there's no silent catch.
 - **Migration requirements:** for a task derived from a deprecation/migration
-  decision (`deprecation-and-migration`) — the replacement, compatibility
+  decision (`skill:deprecation-and-migration`) — the replacement, compatibility
   period, and rollback this task must honor.
 
 - [ ] **Step 1: Write the failing test**
@@ -156,6 +157,53 @@ Every step must contain the actual content an engineer needs. These are **plan f
 - "Similar to Task N" (repeat the code — the engineer may be reading tasks out of order)
 - Steps that describe what to do without showing how (code blocks required for code steps)
 - References to types, functions, or methods not defined in any task
+
+## Applicability Pass
+
+After drafting tasks, before Self-Review: a single pass over the plan
+deciding which of this template's project-specific implementation skills
+actually apply, and folding what applies straight into the plan. This is
+not a new approval checkpoint — nothing pauses for it, and it produces no
+sections for skills that don't apply.
+
+Consider exactly these four skills, in this order:
+
+1. **`skill:source-driven-development`** — does any task involve an unfamiliar
+   API, a version-sensitive pattern, a new dependency, a library/framework
+   upgrade, a deprecated/experimental API, or a case where the approved
+   spec looks like it might collide with the real current API? If so, add
+   that task's **Required sources** section.
+2. **`skill:risk-based-verification`** — run it now (see that skill's own
+   trigger). Add its output as the plan-level `## Risk-Based Verification`
+   section, and copy any task-relevant lines into that task's **Risk-based
+   checks** section.
+3. **`skill:observability-and-instrumentation`** — does any task introduce a
+   failure boundary (file I/O, network, parsing) that needs a defined
+   user-facing error boundary? If so, add that task's **Observability
+   requirements** section.
+4. **`skill:deprecation-and-migration`** — does any task remove or migrate an
+   existing system? If so, add that task's **Migration requirements**
+   section, carrying forward the replacement/compatibility/rollback
+   decisions that skill already produced during brainstorming.
+
+Do not consider `skill:context-engineering` or `skill:releasing-an-obsidian-plugin`
+here — neither produces plan content; see `using-superpowers`' Skill
+Priority table for where they actually sit.
+
+**Dataflow this pass exists to guarantee:**
+
+```text
+custom skill → concrete plan requirements → task brief → implementer → reviewer
+```
+
+For each applicable skill, translate its finding into one of the Task
+Structure's optional sections (or the plan-level Risk-Based Verification
+section) — never leave an implementer or reviewer needing to re-run a
+skill's own routing logic themselves. `task-brief` carries the plan's
+Global Constraints and each task's own optional sections straight into
+the brief, so this is the one place that translation needs to happen. Add
+a section only where a skill actually applies; an inapplicable skill gets
+no section, not an empty one.
 
 ## Self-Review
 
