@@ -3,6 +3,8 @@ name: E2E
 on:
   push:
     branches: ['**']
+  pull_request:
+    branches: ['**']
   workflow_dispatch:
 
 permissions: {}
