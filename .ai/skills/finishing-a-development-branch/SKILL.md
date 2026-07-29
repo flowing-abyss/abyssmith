@@ -29,18 +29,8 @@ Verification failing (<N> failures). Must fix before completing:
 [Show failures]
 ```
 
-**The primary guarantee is this step** — you already have fresh, real
-verification evidence from the command you just ran; completion is safe
-the moment it passes, independent of any hook. Then, as a secondary
-backstop only, create the completion marker: `mkdir -p .ai && touch
-.ai/.verify-on-stop`. All four harnesses (Claude Code, Codex, OpenCode, Pi)
-wire `verify-before-stop.mjs` to check it, but they don't all act on it the
-same way: on Claude Code/Codex it can actually block the turn on a stale or
-skipped run; on OpenCode/Pi it's notification-only (a log line, not a
-block) — see `verify-before-stop.mjs`'s own header comment for the exact
-classification. A harness without a blocking Stop API does not make
-completion unsafe here, since the marker was never the thing guaranteeing
-correctness — this step was. Then continue to Step 2.
+**If it passes:** you already have fresh, real verification evidence from
+the command you just ran — completion is safe now. Then continue to Step 2.
 
 ## Step 2: Detect Environment
 

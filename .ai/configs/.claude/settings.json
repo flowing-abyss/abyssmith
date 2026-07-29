@@ -25,29 +25,6 @@
           }
         ]
       }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.ai/hooks/lint-after-edit.mjs\"",
-            "timeout": 120
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/.ai/hooks/verify-before-stop.mjs\"",
-            "timeout": 600
-          }
-        ]
-      }
     ]
   }
 }

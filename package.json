@@ -28,7 +28,7 @@
     "release:check": "node release-check.mjs",
     "verify:task": "pnpm lint && pnpm typecheck && pnpm test",
     "validate:ai-config": "node .ai/validate.mjs",
-    "test:ai-tooling": "node --test $(find .ai -name '*.test.mjs')",
+    "test:ai-tooling": "node .ai/run-tests.mjs",
     "verify": "pnpm format:check && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm typecheck:e2e && pnpm arch && pnpm deadcode && pnpm validate:ai-config && pnpm test:ai-tooling && pnpm test:coverage && pnpm build && pnpm release:check",
     "ci": "pnpm verify",
     "prepare": "husky && node .ai/setup.mjs"

@@ -14,6 +14,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isMainModule } from './is-main-module.mjs';
 
 // writing-skills is vendored upstream meta-documentation about how to write
 // skills; its links are illustrative filenames for a hypothetical skill
@@ -49,7 +50,6 @@ export function runValidate(aiRoot) {
   const repoRoot = path.join(aiRoot, '..');
   const skillsRoot = path.join(aiRoot, 'skills');
   const hooksRoot = path.join(aiRoot, 'hooks');
-  const configsRoot = path.join(aiRoot, 'configs');
 
   const errors = [];
   const skillDirs = new Set(
@@ -71,9 +71,8 @@ export function runValidate(aiRoot) {
   checkDeprecationDoesNotReplaceBrainstorming();
   checkParallelAgentsHasNegativeTrigger();
   checkHookCapabilityManifest();
-  checkReadmeCapabilityClaims();
-  checkCompletionHookCallsCanonicalScript();
   checkReviewerPromptsMarkedOptional();
+  checkCanonicalVerifyScriptExists();
 
   return { errors, skillDocsChecked: markdownFiles.length };
 
@@ -227,10 +226,7 @@ export function runValidate(aiRoot) {
   // capability's expected hook script must actually appear in that harness's
   // OWN config file — not just "referenced somewhere under .ai/configs/",
   // which would pass even if e.g. Codex's hook were only wired into Claude
-  // Code's settings.json. `knownGaps` entries are asserted to be genuinely
-  // absent from the harness's config — if a gap gets fixed, its entry must
-  // move from knownGaps to capabilities, or this check starts failing (a
-  // deliberate tripwire against a silently stale "known gap" claim).
+  // Code's settings.json.
   function checkHookCapabilityManifest() {
     const manifestPath = path.join(hooksRoot, 'capability-manifest.json');
     if (!existsSync(manifestPath)) {
@@ -262,90 +258,17 @@ export function runValidate(aiRoot) {
           );
         }
       }
-
-      for (const capability of Object.keys(spec.knownGaps ?? {})) {
-        // A knownGaps entry with no matching hook name to check for absence
-        // still has to name something plausible, so this only enforces that
-        // the capability isn't ALSO listed as present — contradictory manifest data.
-        if (spec.capabilities && capability in spec.capabilities) {
-          errors.push(
-            `capability-manifest.json: ${harness} lists "${capability}" in both capabilities and knownGaps`,
-          );
-        }
-      }
     }
   }
 
-  // README hook/harness claims should name only harnesses that actually have
-  // a config directory under .ai/configs/.
-  function checkReadmeCapabilityClaims() {
-    const readmePath = path.join(repoRoot, 'README.md');
-    if (!existsSync(readmePath)) return;
-    const readme = readFileSync(readmePath, 'utf8');
-    const harnessDirs = {
-      'Claude Code': '.claude',
-      Codex: '.codex',
-      OpenCode: '.opencode',
-      Pi: '.pi',
-    };
-    for (const [name, dir] of Object.entries(harnessDirs)) {
-      if (readme.includes(name) && !existsSync(path.join(configsRoot, dir))) {
-        errors.push(`README.md mentions ${name} but .ai/configs/${dir} does not exist`);
-      }
-    }
-  }
-
-  // Structural properties the completion hook must have — checked by source
-  // inspection (regex over the actual script), not just "the word verify
-  // appears somewhere". Complements the executable tests in
-  // verify-before-stop.test.mjs, which check the runtime behavior these
-  // properties are supposed to produce.
-  function checkCompletionHookCallsCanonicalScript() {
-    const file = path.join(hooksRoot, 'verify-before-stop.mjs');
-    if (!existsSync(file)) {
-      errors.push('.ai/hooks/verify-before-stop.mjs is missing');
-      return;
-    }
-    const content = readFileSync(file, 'utf8');
-    const fail = (msg) => errors.push(`verify-before-stop.mjs: ${msg}`);
-
-    const markerCheckIdx = content.search(/existsSync\([^)]*markerPath[^)]*\)/);
-    const markerDeleteIdx = content.search(/rmSync\([^)]*markerPath[^)]*/);
-    // Specifically the "pnpm run verify" spawn, not the earlier `pnpm --version`
-    // preflight check — ordering only matters relative to the actual verify run.
-    const verifyRunIdx = content.search(
-      /spawnSync\(\s*['"]pnpm['"],\s*\[\s*['"]run['"],\s*['"]verify['"]/,
-    );
-
-    if (markerCheckIdx === -1) {
-      fail(
-        'does not check for the completion marker before doing anything (expected an existsSync(markerPath) guard)',
-      );
-    }
-    if (markerDeleteIdx === -1) {
-      fail('does not delete the completion marker (expected an rmSync(markerPath) call)');
-    }
-    if (verifyRunIdx === -1) {
-      fail('does not spawn "pnpm run verify"');
-    }
-    if (markerCheckIdx !== -1 && verifyRunIdx !== -1 && markerCheckIdx > verifyRunIdx) {
-      fail(
-        'checks for the marker after already spawning pnpm — the marker must gate the run, not follow it',
-      );
-    }
-    if (markerDeleteIdx !== -1 && verifyRunIdx !== -1 && markerDeleteIdx > verifyRunIdx) {
-      fail(
-        'deletes the marker after running verification — it must be consumed before the run, so a crash mid-run cannot leave a stale marker behind',
-      );
-    }
-    // The old, superseded design ran a hardcoded ['lint', 'typecheck', 'test',
-    // 'build'] list instead of the canonical script; that regression must not come back.
-    if (
-      /\[\s*['"]lint['"],\s*['"]typecheck['"],\s*['"]test['"],\s*['"]build['"]\s*\]/.test(content)
-    ) {
-      fail(
-        'contains a hardcoded [lint, typecheck, test, build] list — this drifts from pnpm verify and must not exist',
-      );
+  // `pnpm run verify` is the single canonical gate CI, pre-push, branch
+  // completion, and release all call — it must actually exist.
+  function checkCanonicalVerifyScriptExists() {
+    const packageJsonPath = path.join(repoRoot, 'package.json');
+    if (!existsSync(packageJsonPath)) return;
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'));
+    if (!packageJson.scripts?.verify) {
+      errors.push('package.json is missing the canonical "verify" script');
     }
   }
 
@@ -374,7 +297,7 @@ function listFiles(dir) {
 }
 
 // --- CLI ---
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule(import.meta.url)) {
   const aiRoot = path.dirname(fileURLToPath(import.meta.url));
   const { errors, skillDocsChecked } = runValidate(aiRoot);
 

@@ -2,13 +2,6 @@
 
 import path from 'node:path';
 
-// Blocking classification: CONFIRMED on Claude Code/Codex (their own
-// documented PreToolUse `permissionDecision: "deny"` contract, and this
-// hook was observed blocking a real npm command during this repo's own
-// development). Best-effort on OpenCode/Pi — see each adapter's own
-// comment in .ai/configs/.opencode/plugins/ai-hooks.js and
-// .ai/configs/.pi/extensions/pnpm-policy.ts for their actual contract.
-//
 // Read the hook payload supplied by Claude Code or Codex.
 const input = await readStdinJson();
 const command = input?.tool_input?.command;

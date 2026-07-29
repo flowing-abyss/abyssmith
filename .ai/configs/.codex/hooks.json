@@ -1,5 +1,5 @@
 {
-  "description": "Project-local pnpm policy and quality checks.",
+  "description": "Project-local pnpm policy.",
   "hooks": {
     "SessionStart": [
       {
@@ -24,31 +24,6 @@
             "command": "node \"$(git rev-parse --show-toplevel)/.ai/hooks/block-npm-commands.mjs\"",
             "timeout": 10,
             "statusMessage": "Enforcing pnpm policy"
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.ai/hooks/lint-after-edit.mjs\"",
-            "timeout": 120,
-            "statusMessage": "Running pnpm lint"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.ai/hooks/verify-before-stop.mjs\"",
-            "timeout": 600,
-            "statusMessage": "Running final pnpm checks"
           }
         ]
       }

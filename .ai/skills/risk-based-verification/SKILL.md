@@ -67,20 +67,15 @@ Evaluate each briefly — most changes trigger zero or one of these:
 | Compatibility | Can existing configs, persisted data, or the public API break? |
 | Critical user workflow | Can a user-visible workflow fail despite unit tests passing? |
 
-## Output: a plan section, not a separate document
+## Output: a plan section only when something applies
 
-Record the result directly in the implementation plan (see `skill:writing-plans`'
-optional `Risk-Based Verification` task section). If no category applies
-beyond what normal unit/integration/completion verification already covers,
-write exactly this and stop — do not invent risk for a trivial change:
+The categories above are a quick scan, not a mandatory report. If nothing
+elevated beyond normal unit/integration/completion verification applies,
+add nothing to the plan — no section, not even a "no risks" placeholder.
+Most changes land here; this is the common case, not a shortcut.
 
-```markdown
-## Risk-Based Verification
-
-No elevated risks beyond normal unit, integration, and completion verification.
-```
-
-If one or more categories apply, keep it to what's actually needed:
+If one or more categories genuinely apply, add exactly the plan's optional
+`Risk-Based Verification` section (see `skill:writing-plans`), with only what's needed:
 
 ```markdown
 ## Risk-Based Verification
@@ -91,24 +86,22 @@ Applicable risks:
 Required checks:
 - Migration test: old settings.json (pre-field) loads without throwing
 - Regression test: default value applied when field is absent
-
-Residual risks:
-- None
 ```
 
 Every applicable risk needs at least one concrete, executable check listed
 under "Required checks" — a category with no check attached is not done.
-Skip categories that don't apply; don't pad the list to look thorough.
+Skip categories that don't apply; don't pad the list to look thorough, and
+don't create the section at all when the answer is "nothing applies."
 
 ## Stop Conditions
 
-Only for risks actually identified as applicable:
+Only when the plan actually has a Risk-Based Verification section:
 
 - an applicable risk has no executable check in the plan section;
 - a bug fix has no regression test;
 - a migration has no tested path for existing data;
 - only mocked behavior was tested for an external boundary that was flagged as a risk.
 
-These stop conditions do not apply to changes where the risk section reads
-"No elevated risks" — that's not a lesser version of the checklist, it's the
-correct, complete output for a low-risk change.
+A plan with no Risk-Based Verification section at all is not a lesser or
+incomplete plan — it's the correct output when the scan found nothing
+elevated.

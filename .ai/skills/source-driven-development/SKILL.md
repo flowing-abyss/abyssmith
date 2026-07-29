@@ -7,7 +7,12 @@ description: Grounds version-sensitive, unfamiliar, newly-introduced, deprecated
 
 ## Overview
 
-Every framework-specific code decision must be backed by official documentation. Don't implement from memory — verify, cite, and let the user see your sources. Training data goes stale, APIs get deprecated, best practices evolve. This skill ensures the user gets code they can trust because every pattern traces back to an authoritative source they can check.
+Verify unfamiliar, version-sensitive, newly introduced, deprecated,
+security-sensitive, or compatibility-relevant API decisions against
+authoritative documentation, rather than implementing them from memory —
+training data goes stale, APIs get deprecated, best practices evolve.
+Routine use of an already-established project pattern doesn't need a fresh
+research pass; see When to Use below for the actual triggers.
 
 ## When to Use
 
@@ -214,11 +219,8 @@ Honesty about what you couldn't verify is more valuable than false confidence.
 
 | Rationalization | Reality |
 |---|---|
-| "I'm confident about this API" | Confidence is not evidence. Training data contains outdated patterns that look correct but break against current versions. Verify. |
-| "Fetching docs wastes tokens" | Hallucinating an API wastes more. The user debugs for an hour, then discovers the function signature changed. One fetch prevents hours of rework. |
-| "The docs won't have what I need" | If the docs don't cover it, that's valuable information — the pattern may not be officially recommended. |
-| "I'll just mention it might be outdated" | A disclaimer doesn't help. Either verify and cite, or clearly flag it as unverified. Hedging is the worst option. |
-| "This is a simple task, no need to check" | Simple tasks with wrong patterns become templates. The user copies your deprecated form handler into ten components before discovering the modern approach exists. |
+| "Fetching docs wastes tokens" | Hallucinating an API wastes more — one fetch prevents hours of the user's rework. |
+| "This is a simple task, no need to check" | Only true if it doesn't meet a "When to Use" trigger above; if it does, "simple" isn't the deciding factor. |
 
 ## Red Flags
 
