@@ -1,0 +1,45 @@
+{
+  "_comment": "Internal, machine-readable manifest of which .ai/hooks/*.mjs script is expected to implement which capability, per harness config file. Consumed by .ai/validate.mjs's checkHookCapabilityManifest — not user-facing, not a README source.",
+  "harnesses": {
+    "claude-code": {
+      "configFile": ".ai/configs/.claude/settings.json",
+      "capabilities": {
+        "session-bootstrap": "inject-superpowers.mjs",
+        "command-blocking": "block-npm-commands.mjs",
+        "post-edit-lint": "lint-after-edit.mjs",
+        "completion-verification": "verify-before-stop.mjs"
+      }
+    },
+    "codex": {
+      "configFile": ".ai/configs/.codex/hooks.json",
+      "capabilities": {
+        "session-bootstrap": "inject-superpowers.mjs",
+        "command-blocking": "block-npm-commands.mjs",
+        "post-edit-lint": "lint-after-edit.mjs",
+        "completion-verification": "verify-before-stop.mjs"
+      }
+    },
+    "opencode": {
+      "configFile": ".ai/configs/.opencode/plugins/ai-hooks.js",
+      "capabilities": {
+        "command-blocking": "block-npm-commands.mjs",
+        "post-edit-lint": "lint-after-edit.mjs",
+        "completion-verification": "verify-before-stop.mjs"
+      },
+      "knownGaps": {
+        "session-bootstrap": "OpenCode's plugin API for injecting system-prompt context at session start was not verified when this was written (candidates: session.start, chat.message, experimental.chat.system.transform — none confirmed). using-superpowers is not automatically bootstrapped here; a user should paste .ai/skills/using-superpowers/SKILL.md at session start, or invoke it explicitly, until this is verified and wired."
+      }
+    },
+    "pi": {
+      "configFile": ".ai/configs/.pi/extensions/pnpm-policy.ts",
+      "capabilities": {
+        "command-blocking": "block-npm-commands.mjs",
+        "post-edit-lint": "lint-after-edit.mjs",
+        "completion-verification": "verify-before-stop.mjs"
+      },
+      "knownGaps": {
+        "session-bootstrap": "Pi's ExtensionAPI event for injecting system-prompt context at session start was not verified when this was written. using-superpowers is not automatically bootstrapped here; a user should paste .ai/skills/using-superpowers/SKILL.md at session start, or invoke it explicitly, until this is verified and wired."
+      }
+    }
+  }
+}

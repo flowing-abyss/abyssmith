@@ -23,6 +23,23 @@ function findAiRoot(fromPath: string): string {
   return dir;
 }
 
+// Capability classification for this adapter (see .ai/hooks/capability-manifest.json):
+//
+// - command-blocking (tool_call): returns { block: true, reason } — a
+//   structured blocking response, PROVIDED Pi's ExtensionAPI treats that
+//   return shape as cancelling the tool call. That's the documented
+//   contract this relies on, not independently verified end-to-end in a
+//   live Pi session.
+// - post-edit-lint (tool_result on write/edit): returns { isError: true, content }
+//   — same caveat, surfaced as a tool-result error.
+// - completion-verification (agent_settled): NOTIFICATION-ONLY. This only
+//   calls console.error; it does not return a blocking value and cannot
+//   stop or fail the session. The primary completion guarantee is
+//   `finishing-a-development-branch` running `pnpm run verify` directly —
+//   this handler is a diagnostic backstop only.
+// - session-bootstrap: NOT WIRED. See capability-manifest.json's
+//   knownGaps.session-bootstrap — Pi's context-injection event wasn't
+//   verified when this was written.
 export default function (pi: ExtensionAPI): void {
   pi.on('tool_call', async (event) => {
     if (!isToolCallEventType('bash', event)) {
