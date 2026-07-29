@@ -92,6 +92,28 @@ include this section.]
   and return types. A task's implementer sees only their own task; this
   block is how they learn the names and types neighboring tasks use.]
 
+**Optional requirement sections** — include only the ones that actually
+apply to this task; a task with none of these needs is fine without them.
+This is how a custom skill's applicable findings reach the implementer and
+reviewer without either one having to re-run the skill's own routing logic:
+
+- **Project-specific requirements:** constraints from project instructions
+  or established patterns that bind this task specifically (beyond the
+  plan's Global Constraints, which already apply to every task).
+- **Required sources:** for framework/library-specific work
+  (`source-driven-development`) — the exact doc pages consulted and the
+  pattern each one supports.
+- **Risk-based checks:** for behavior-changing work
+  (`risk-based-verification`) — copy the task-relevant lines from that
+  skill's plan-level Risk-Based Verification section, or write "No elevated
+  risks" if that's what applies here.
+- **Observability requirements:** for a task with a failure boundary
+  (`observability-and-instrumentation`) — what gets a `Notice()`, what goes
+  to console, confirmation there's no silent catch.
+- **Migration requirements:** for a task derived from a deprecation/migration
+  decision (`deprecation-and-migration`) — the replacement, compatibility
+  period, and rollback this task must honor.
+
 - [ ] **Step 1: Write the failing test**
 
 ```python
