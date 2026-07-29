@@ -19,3 +19,5 @@ pnpm install
 ```
 
 Then tell your agent what you're building.
+
+<!-- pr-trigger-verification: temporary, will be reverted -->
