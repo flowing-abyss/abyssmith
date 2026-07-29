@@ -2,6 +2,8 @@
 
 Reference template for an Obsidian Community Plugin (TypeScript → `main.js` via esbuild). Read `src/main.ts`/`src/settings.ts` for the real code pattern, and run `pnpm run <script>` to see what's available — this file only covers what isn't already enforced by config/tooling or discoverable that way.
 
+At the start of an agent session, load and follow the `using-superpowers` skill before taking action. Specifically dispatched subagents should follow their task brief instead.
+
 ## Manual UI verification
 
 Obsidian ships a CLI for driving a _running_ Obsidian instance from the terminal — use it instead of guessing whether a UI change works: `obsidian devtools` (toggle DevTools), `obsidian plugin:reload id=<plugin-id>` (hot-reload after a build), `obsidian dev:dom selector=<css>` (query the live DOM), `obsidian dev:screenshot path=out.png`, `obsidian dev:console` / `dev:errors` (captured console/errors), `obsidian eval code="..."` (run JS in-app). Requires Obsidian 1.12+ with **Settings → General → Command line interface** enabled, and the app running. Docs: https://obsidian.md/help/cli#Developer+commands
