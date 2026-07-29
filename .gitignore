@@ -50,10 +50,6 @@ allure-results/
 /.worktrees/
 /.zed/
 
-# Completion marker for the Stop-hook verify gate (.ai/hooks/verify-before-stop.mjs) —
-# created and consumed within a single session, never meant to persist.
-.ai/.verify-on-stop
-
 /.mcp.json
 /AGENTS.md
 /CLAUDE.md
