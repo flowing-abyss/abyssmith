@@ -12,7 +12,7 @@ failures, read-only code investigation, documentation lookups, or analysis of
 independent subsystems — anything with no shared mutable state and no
 overlapping file changes. It is **not** for implementing tasks from one
 implementation plan in a shared working tree; running implementers in
-parallel there produces file conflicts. Use `subagent-driven-development`
+parallel there produces file conflicts. Use `skill:subagent-driven-development`
 for that — it dispatches one implementer at a time, with a review gate
 between tasks. Parallel implementation is only safe with per-task worktree
 isolation and a dedicated integration workflow, neither of which this skill

@@ -9,7 +9,7 @@ description: Optimizes agent context setup. Use when rules files are missing or 
 
 Feed agents the right information at the right time. Context is the single biggest lever for agent output quality — too little and the agent hallucinates, too much and it loses focus. Context engineering is the practice of deliberately curating what the agent sees, when it sees it, and how it's structured.
 
-This is a diagnostic and setup skill, not a step in the Superpowers build loop (`brainstorming` → `writing-plans` → implementation → `verification-before-completion` → `finishing-a-development-branch`). It doesn't run automatically at the start of every session, and it doesn't replace `brainstorming` or `writing-plans` for an actual task — see "Not a planning substitute" below.
+This is a diagnostic and setup skill, not a step in the Superpowers build loop (`skill:brainstorming` → `skill:writing-plans` → implementation → `skill:verification-before-completion` → `skill:finishing-a-development-branch`). It doesn't run automatically at the start of every session, and it doesn't replace `skill:brainstorming` or `skill:writing-plans` for an actual task — see "Not a planning substitute" below.
 
 ## When to Use
 
@@ -241,7 +241,7 @@ C) Append a number suffix like "Task (2)" (most user-friendly)
 
 ### Not a Planning Substitute
 
-This skill is about what the agent sees, not what it does next. For any actual multi-step task, use Superpowers' own process: `brainstorming` to reach an approved spec, then `writing-plans` for the implementation plan. Don't emit an ad hoc plan here instead of invoking those — a second, lighter-weight planning path defeats the plan review and task-decomposition discipline they provide.
+This skill is about what the agent sees, not what it does next. For any actual multi-step task, use Superpowers' own process: `skill:brainstorming` to reach an approved spec, then `skill:writing-plans` for the implementation plan. Don't emit an ad hoc plan here instead of invoking those — a second, lighter-weight planning path defeats the plan review and task-decomposition discipline they provide.
 
 ## Anti-Patterns
 
