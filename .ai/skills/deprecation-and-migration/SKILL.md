@@ -5,6 +5,27 @@ description: Manages deprecation and migration. Use when removing old systems, A
 
 # Deprecation and Migration
 
+## Where this sits in the workflow
+
+This skill is an entry point parallel to `brainstorming` for removal- or
+migration-shaped requests — it is not an alternative to `brainstorming` and
+`writing-plans`, and it does not go straight to implementation.
+
+```text
+removal or migration request
+→ deprecation-and-migration (this skill: lifecycle analysis and migration constraints)
+→ brainstorming (design approval, using this skill's output as input)
+→ writing-plans
+→ implementation
+→ verification
+```
+
+Use this skill first to work out the replacement, affected consumers,
+compatibility period, rollout strategy, rollback, and removal criteria (the
+sections below). Then hand that to `brainstorming` as the input for design
+approval, same as any other spec input — do not skip straight from this
+skill's decision to writing code.
+
 ## Overview
 
 Code is a liability, not an asset. Every line of code has ongoing maintenance cost — bugs to fix, dependencies to update, security patches to apply, and new engineers to onboard. Deprecation is the discipline of removing code that no longer earns its keep, and migration is the process of moving users safely from the old to the new.

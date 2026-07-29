@@ -1,130 +1,92 @@
 ---
 name: risk-based-verification
 description: >
-  Designs and executes a risk-based verification matrix for behavior-changing
-  work. Use after design approval, before implementation, and before claiming
-  completion. Complements Superpowers TDD and verification skills; does not
-  replace them.
+  Identifies which risk categories apply to a change and records the required
+  checks as a compact section in the implementation plan. Use once, after
+  design/plan approval and before implementation. Complements Superpowers'
+  writing-plans, TDD, and verification-before-completion; does not replace
+  them or add a separate mandatory stage.
 ---
 
 # Risk-Based Verification
 
 ## Purpose
 
-Testing effort must follow risk, not file count or code coverage.
-
-Apply this skill to every change that modifies observable behavior, crosses a
-boundary, changes stored data, affects authorization, introduces concurrency,
-or changes a public contract.
+Testing effort must follow risk, not file count or code coverage. This skill
+identifies which risk categories genuinely apply to a change and turns that
+into a few lines the plan and its reviewers can act on — it is not a
+standalone process stage every task goes through.
 
 ## Ownership
 
-Superpowers owns:
+Superpowers owns implementation planning, red-green-refactor, systematic
+debugging, and completion verification. This skill owns exactly one thing:
+deciding which risk categories apply to a change and what that implies for
+verification, then handing that decision to `writing-plans` to record.
 
-- implementation planning;
-- red-green-refactor;
-- systematic debugging;
-- completion verification.
+## When to run this
 
-This skill owns:
+Once per plan (or per task, for a task with materially different risk from
+its siblings), after the design/plan is approved and before implementation
+starts. Re-check before claiming completion only if the implementation
+turned out to touch something the original risk pass didn't anticipate.
 
-- risk identification;
-- test-strategy selection;
-- verification coverage;
-- evidence reporting.
+## The risk categories
 
-## Step 1: Define the change contract
-
-Before implementation, record:
-
-- intended behavior;
-- preserved behavior;
-- invariants;
-- explicit non-goals;
-- compatibility requirements;
-- acceptable failure behavior.
-
-Do not proceed when the intended behavior cannot be stated observably.
-
-## Step 2: Build the risk map
-
-Evaluate each category:
+Evaluate each briefly — most changes trigger zero or one of these:
 
 | Risk | Questions |
 |---|---|
 | Data integrity | Can data be lost, duplicated, reordered, or corrupted? |
-| Security | Can authorization, validation, or secret handling regress? |
-| Boundaries | Can external APIs, queues, databases, or files behave differently? |
-| Concurrency | Can retries, races, duplicate delivery, or partial failure occur? |
-| Compatibility | Can existing clients, schemas, configs, or persisted data break? |
-| Availability | Can the change create timeouts, overload, deadlocks, or retry storms? |
-| User behavior | Can a user-visible workflow fail despite unit tests passing? |
+| Authorization / security | Can authorization, validation, or secret handling regress? |
+| Persistence or migration | Can stored data, schemas, or settings need a migration path? |
+| External boundaries | Can external APIs, the filesystem, or the vault behave differently? |
+| Concurrency | Can retries, races, or partial failure occur? |
+| Compatibility | Can existing configs, persisted data, or the public API break? |
+| Critical user workflow | Can a user-visible workflow fail despite unit tests passing? |
 
-Classify each applicable risk as low, medium, or high.
+## Output: a plan section, not a separate document
 
-## Step 3: Create the verification matrix
+Record the result directly in the implementation plan (see `writing-plans`'
+optional `Risk-Based Verification` task section). If no category applies
+beyond what normal unit/integration/completion verification already covers,
+write exactly this and stop — do not invent risk for a trivial change:
 
-Select tests based on identified risks:
+```markdown
+## Risk-Based Verification
 
-- unit tests for local logic;
-- regression tests for every fixed defect;
-- boundary and negative tests for invalid or hostile inputs;
-- contract tests for module and service interfaces;
-- integration tests for databases, queues, files, and external adapters;
-- property or invariant tests where many input combinations are possible;
-- concurrency and idempotency tests where retries or parallelism exist;
-- end-to-end tests for critical user workflows;
-- performance comparison when latency, memory, or throughput may change;
-- migration and rollback tests for stored-data changes.
+No elevated risks beyond normal unit, integration, and completion verification.
+```
 
-Every medium or high risk must map to at least one executable verification.
+If one or more categories apply, keep it to what's actually needed:
 
-## Step 4: Establish the baseline
+```markdown
+## Risk-Based Verification
 
-Before modifying behavior:
+Applicable risks:
+- Persistence: settings schema gains a new required field
 
-1. Run the smallest relevant existing test suite.
-2. Record existing failures separately.
-3. For a bug fix, create a test that fails for the reported defect.
-4. Do not attribute pre-existing failures to the new change.
+Required checks:
+- Migration test: old settings.json (pre-field) loads without throwing
+- Regression test: default value applied when field is absent
 
-## Step 5: Execute progressively
+Residual risks:
+- None
+```
 
-Run verification in this order:
-
-1. new or modified tests;
-2. affected module or package tests;
-3. integration or contract tests;
-4. lint and static analysis;
-5. type checking;
-6. build;
-7. full test suite when practical;
-8. runtime or browser verification when applicable.
-
-Stop on the first unexplained failure.
-
-## Step 6: Report evidence
-
-Completion reports must include:
-
-- exact commands executed;
-- exit codes;
-- number of passed, failed, skipped, and flaky tests;
-- risks covered by each test;
-- verification that was not performed;
-- residual risks.
-
-Do not write "all tests pass" unless the tests were executed in the current
-working tree.
+Every applicable risk needs at least one concrete, executable check listed
+under "Required checks" — a category with no check attached is not done.
+Skip categories that don't apply; don't pad the list to look thorough.
 
 ## Stop Conditions
 
-The work is not complete when:
+Only for risks actually identified as applicable:
 
-- a high-risk item has no executable verification;
+- an applicable risk has no executable check in the plan section;
 - a bug fix has no regression test;
-- skipped tests are relevant to the change;
-- a flaky test was ignored rather than investigated;
-- migration rollback was not tested;
-- only mocked behavior was tested for an external boundary;
-- verification output is unavailable or ambiguous.
+- a migration has no tested path for existing data;
+- only mocked behavior was tested for an external boundary that was flagged as a risk.
+
+These stop conditions do not apply to changes where the risk section reads
+"No elevated risks" — that's not a lesser version of the checklist, it's the
+correct, complete output for a low-risk change.

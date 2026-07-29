@@ -26,7 +26,9 @@
     "deadcode": "knip",
     "arch": "depcruise src --config dependency-cruiser.config.cjs --output-type err-long",
     "release:check": "node release-check.mjs",
-    "verify": "pnpm format:check && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm typecheck:e2e && pnpm arch && pnpm deadcode && pnpm test:coverage && pnpm build && pnpm release:check",
+    "verify:task": "pnpm lint && pnpm typecheck && pnpm test",
+    "validate:ai-config": "node .ai/validate.mjs",
+    "verify": "pnpm format:check && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm typecheck:e2e && pnpm arch && pnpm deadcode && pnpm validate:ai-config && pnpm test:coverage && pnpm build && pnpm release:check",
     "ci": "pnpm verify",
     "prepare": "husky && node .ai/setup.mjs"
   },

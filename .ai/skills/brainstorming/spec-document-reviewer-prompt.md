@@ -1,5 +1,12 @@
 # Spec Document Reviewer Prompt Template
 
+**Optional, manual, high-assurance step.** `brainstorming`'s own inline
+spec self-review (see that skill's SKILL.md) is the default and is
+sufficient for normal work. Dispatch this separate subagent reviewer only
+when the spec is unusually high-stakes and warrants an independent second
+pass — this is not a required step in the standard brainstorming → planning
+flow.
+
 Use this template when dispatching a spec document reviewer subagent.
 
 **Purpose:** Verify the spec is complete, consistent, and ready for implementation planning.

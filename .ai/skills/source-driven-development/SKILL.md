@@ -23,6 +23,17 @@ Every framework-specific code decision must be backed by official documentation.
 - Correctness does not depend on a specific version (renaming variables, fixing typos, moving files)
 - Pure logic that works the same across all versions (loops, conditionals, data structures)
 - The user explicitly wants speed over verification ("just do it quickly")
+- The code is fully determined by an interface or contract already fixed elsewhere in the project (an approved plan's `Interfaces` block, an existing type definition) — implement to that, don't re-derive it from docs
+
+## Precedence
+
+When official documentation, the approved spec/plan, and existing project code disagree, resolve in this order:
+
+1. **The approved spec or plan** governs — it's what the user signed off on. Don't silently override it because current docs recommend something else.
+2. **Project instructions and existing established patterns** (AGENTS.md/CLAUDE.md, conventions already used elsewhere in the codebase) govern next.
+3. **Documentation is for verifying API usage** — correct function signatures, current vs. deprecated methods, parameter shapes — not for overriding 1 or 2.
+
+Only surface a conflict when the documented API is genuinely incompatible with what's being built (a method was removed, a signature changed, a pattern is hard-deprecated with a stated removal date) — not merely because the docs show a newer style than the one already in use. "The docs demonstrate a different but equally valid approach" is not a conflict worth interrupting for.
 
 ## The Process
 
@@ -103,21 +114,23 @@ Write code that matches what the documentation shows:
 - If the docs deprecate a pattern, don't use the deprecated version
 - If the docs don't cover something, flag it as unverified
 
-**When docs conflict with existing project code:**
+**When the documented API is genuinely incompatible with existing project code** (not just a newer alternative style — see Precedence above):
 
 ```
 CONFLICT DETECTED:
-The existing codebase uses useState for form loading state,
-but React 19 docs recommend useActionState for this pattern.
-(Source: react.dev/reference/react/useActionState)
+The codebase calls `vault.read()` with a callback argument, but the
+current Obsidian API docs show `read()` returning a Promise with no
+callback overload — the callback form appears removed, not just
+superseded.
+(Source: docs.obsidian.md/Reference/TypeScript+API/Vault/read)
 
-Options:
-A) Use the modern pattern (useActionState) — consistent with current docs
-B) Match existing code (useState) — consistent with codebase
-→ Which approach do you prefer?
+Per Precedence: this isn't "docs prefer a newer style" — the old
+signature looks genuinely gone. Flagging rather than silently
+switching, since that changes a call site the plan didn't call out.
+→ Confirm before I update the call site.
 ```
 
-Surface the conflict. Don't silently pick one.
+Per Precedence, the approved spec/plan and existing project patterns still win for anything short of a real incompatibility — don't raise a conflict just because the docs show a different but equally valid approach.
 
 ### Step 4: Cite Your Sources
 

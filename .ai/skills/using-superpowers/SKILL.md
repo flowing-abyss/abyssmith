@@ -36,12 +36,12 @@ This template vendors six skills beyond stock Superpowers. They aren't a separat
 
 | Trigger | Skill | Where it sits |
 |---------|-------|----------------|
-| Starting a new session, output quality has degraded, or context/rules files need setting up | `context-engineering` | Before anything else — it's about what the agent sees, not what it does. |
-| Implementing anything framework- or library-specific (esbuild config, Obsidian API usage, a new dependency) | `source-driven-development` | Runs alongside implementation skills, after brainstorming — cites official docs instead of implementing from memory. |
-| After a plan/design is approved, before writing code, and again before claiming the work is done | `risk-based-verification` | Between `writing-plans`/`brainstorming` and `verification-before-completion` — complements Superpowers' TDD and verification skills, doesn't replace them. |
+| Rules files are missing or need setup, agent output quality has visibly degraded, or you're switching into an unfamiliar area of the codebase | `context-engineering` | Diagnostic/setup skill, not a step in the build loop — invoke only when one of its own triggers fires, not by default at every session start. Never a substitute for `brainstorming`/`writing-plans` on an actual task. |
+| Implementing anything framework- or library-specific (esbuild config, Obsidian API usage, a new dependency, a version migration) | `source-driven-development` | Runs alongside implementation skills, after brainstorming — cites official docs instead of implementing from memory. Verifies API usage; does not override an approved spec/plan or existing project conventions. |
+| After a plan/design is approved, before writing code, and again before claiming the work is done | `risk-based-verification` | Between `writing-plans`/`brainstorming` and `verification-before-completion` — complements Superpowers' TDD and verification skills, doesn't replace them. Its output is a short section inside the plan, not a separate mandatory stage. |
 | A feature can fail silently (file I/O, network, parsing) and the user would have no way to tell why | `observability-and-instrumentation` | Part of implementation, before `finishing-a-development-branch` — visible errors ship with the feature, not after. |
-| Removing old code/APIs, or migrating from one implementation to another | `deprecation-and-migration` | An alternate entry point parallel to `brainstorming`, for removal-shaped tasks instead of build-shaped ones. |
-| Cutting a release — bumping the version, tagging, publishing | `releasing-an-obsidian-plugin` | A separate, self-contained flow after `finishing-a-development-branch` — not part of the build loop. |
+| Removing old code/APIs, or migrating from one implementation to another | `deprecation-and-migration` | Runs before `brainstorming` on removal/migration-shaped requests, to gather lifecycle inputs (replacement, consumers, compatibility period, rollback) — design approval and planning still go through `brainstorming` → `writing-plans` afterward. Not a replacement for either. |
+| Cutting a release — bumping the version, tagging, publishing | `releasing-an-obsidian-plugin` | A separate, self-contained flow after `finishing-a-development-branch`, run only on an explicit release request — not part of the build loop and never triggered automatically by finishing a branch. |
 
 ## Red Flags
 

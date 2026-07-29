@@ -6,6 +6,15 @@ Reference template for an Obsidian Community Plugin (TypeScript → `main.js` vi
 
 Obsidian ships a CLI for driving a _running_ Obsidian instance from the terminal — use it instead of guessing whether a UI change works: `obsidian devtools` (toggle DevTools), `obsidian plugin:reload id=<plugin-id>` (hot-reload after a build), `obsidian dev:dom selector=<css>` (query the live DOM), `obsidian dev:screenshot path=out.png`, `obsidian dev:console` / `dev:errors` (captured console/errors), `obsidian eval code="..."` (run JS in-app). Requires Obsidian 1.12+ with **Settings → General → Command line interface** enabled, and the app running. Docs: https://obsidian.md/help/cli#Developer+commands
 
+## Verification
+
+`pnpm run verify` is the canonical quality gate — CI, pre-push, branch
+completion, and the release flow all call this single script, not their own
+lists of checks. Run it directly rather than assembling lint/typecheck/test/
+build by hand. `pnpm run verify:task` is a faster subset (lint, typecheck,
+unit tests) for checking a single task mid-implementation, not a substitute
+for `verify` at branch completion.
+
 ## Constraints nothing else catches
 
 - `id` in `manifest.json` is permanent once released — never rename it.
