@@ -5,18 +5,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { after, before, test } from 'node:test';
+import { buildTaskBrief, extractGlobalConstraints, extractTask } from './task-brief.mjs';
 
-const scriptPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'task-brief');
+const scriptDir = path.dirname(fileURLToPath(import.meta.url));
+const scriptPath = path.join(scriptDir, 'task-brief.mjs');
 
-let tmpDir;
-let planPath;
-
-before(() => {
-  tmpDir = mkdtempSync(path.join(os.tmpdir(), 'task-brief-fixture-'));
-  planPath = path.join(tmpDir, 'plan.md');
-  writeFileSync(
-    planPath,
-    `# Fixture Implementation Plan
+const FIXTURE_PLAN = `# Fixture Implementation Plan
 
 ## Global Constraints
 
@@ -38,8 +32,49 @@ before(() => {
 - vault reads get a Notice() on failure
 
 - [ ] **Step 1: Do the thing**
-`,
-  );
+`;
+
+// --- Unit tests against the pure functions (no process spawn) ---
+
+test('extractGlobalConstraints captures the section by heading level, not just the next line', () => {
+  const lines = FIXTURE_PLAN.split('\n');
+  const constraints = extractGlobalConstraints(lines);
+  assert.ok(constraints.some((l) => l.includes('Global Constraints')));
+  assert.ok(constraints.some((l) => l.includes('Node version: 22+')));
+  assert.ok(!constraints.some((l) => l.includes('Task 1')));
+});
+
+test('extractTask returns only the requested task, including its subsections', () => {
+  const lines = FIXTURE_PLAN.split('\n');
+  const task1 = extractTask(lines, '1');
+  assert.ok(task1.some((l) => l.includes('Task 1: First Component')));
+  assert.ok(task1.some((l) => l.includes('Required sources')));
+  assert.ok(!task1.some((l) => l.includes('Task 2')));
+});
+
+test('extractTask returns an empty array for a task that does not exist', () => {
+  const lines = FIXTURE_PLAN.split('\n');
+  assert.deepEqual(extractTask(lines, '99'), []);
+});
+
+test('buildTaskBrief returns null when the task is not found', () => {
+  assert.equal(buildTaskBrief(FIXTURE_PLAN, '99'), null);
+});
+
+test('buildTaskBrief prepends Global Constraints ahead of the task text', () => {
+  const brief = buildTaskBrief(FIXTURE_PLAN, '1');
+  assert.ok(brief.indexOf('Global Constraints') < brief.indexOf('Task 1: First Component'));
+});
+
+// --- End-to-end CLI tests (spawn the script exactly as an agent would) ---
+
+let tmpDir;
+let planPath;
+
+before(() => {
+  tmpDir = mkdtempSync(path.join(os.tmpdir(), 'task-brief-fixture-'));
+  planPath = path.join(tmpDir, 'plan.md');
+  writeFileSync(planPath, FIXTURE_PLAN);
 });
 
 after(() => {
@@ -47,11 +82,13 @@ after(() => {
 });
 
 function runTaskBrief(taskNumber, outFile) {
-  execFileSync(scriptPath, [planPath, String(taskNumber), outFile], { encoding: 'utf8' });
+  execFileSync(process.execPath, [scriptPath, planPath, String(taskNumber), outFile], {
+    encoding: 'utf8',
+  });
   return readFileSync(outFile, 'utf8');
 }
 
-test('Task 1 brief contains Global Constraints and its own Required sources', () => {
+test('CLI: Task 1 brief contains Global Constraints and its own Required sources', () => {
   const out = path.join(tmpDir, 'task-1-brief.md');
   const content = runTaskBrief(1, out);
   assert.match(content, /Global Constraints/);
@@ -61,7 +98,7 @@ test('Task 1 brief contains Global Constraints and its own Required sources', ()
   assert.match(content, /useActionState/);
 });
 
-test('Task 1 brief does not contain Task 2 or its Observability section', () => {
+test('CLI: Task 1 brief does not contain Task 2 or its Observability section', () => {
   const out = path.join(tmpDir, 'task-1-brief-2.md');
   const content = runTaskBrief(1, out);
   assert.doesNotMatch(content, /Task 2: Second Component/);
@@ -69,7 +106,7 @@ test('Task 1 brief does not contain Task 2 or its Observability section', () => 
   assert.doesNotMatch(content, /Notice\(\) on failure/);
 });
 
-test('Task 2 brief contains Global Constraints and its own Observability requirements', () => {
+test('CLI: Task 2 brief contains Global Constraints and its own Observability requirements', () => {
   const out = path.join(tmpDir, 'task-2-brief.md');
   const content = runTaskBrief(2, out);
   assert.match(content, /Global Constraints/);
@@ -79,10 +116,17 @@ test('Task 2 brief contains Global Constraints and its own Observability require
   assert.match(content, /Notice\(\) on failure/);
 });
 
-test('Task 2 brief does not contain Task 1 or its Required sources', () => {
+test('CLI: Task 2 brief does not contain Task 1 or its Required sources', () => {
   const out = path.join(tmpDir, 'task-2-brief-2.md');
   const content = runTaskBrief(2, out);
   assert.doesNotMatch(content, /Task 1: First Component/);
   assert.doesNotMatch(content, /Required sources/);
   assert.doesNotMatch(content, /useActionState/);
+});
+
+test('CLI: a nonexistent task exits with code 3 and writes no file', () => {
+  const out = path.join(tmpDir, 'task-99-brief.md');
+  assert.throws(() => {
+    execFileSync(process.execPath, [scriptPath, planPath, '99', out], { encoding: 'utf8' });
+  });
 });
