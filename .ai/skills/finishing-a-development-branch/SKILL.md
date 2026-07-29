@@ -13,17 +13,28 @@ description: Use when implementation is complete, all tests pass, and you need t
 
 ## Step 1: Verify Tests
 
-Run the project's full test suite (`npm test` / `cargo test` / `pytest` / `go test ./...`).
+Run the project's canonical completion gate — for a pnpm project (a
+`pnpm-lock.yaml` at the repo root), that's `pnpm run verify`, the same
+command CI and the release flow run; it is the single source of truth for
+what "done" means, so don't substitute a partial check (lint only, tests
+only). For other ecosystems, use the project's equivalent full check
+(`cargo test`, `pytest`, `go test ./...`, or whatever the project's own
+instructions name).
 
-**If tests fail**, report the failures and stop — the menu comes after a green suite:
+**If it fails**, report the failures and stop — the menu comes after a clean run:
 
 ```
-Tests failing (<N> failures). Must fix before completing:
+Verification failing (<N> failures). Must fix before completing:
 
 [Show failures]
 ```
 
-**If tests pass:** continue to Step 2.
+**If it passes:** create the completion marker so the Stop hook (on
+harnesses that have one — Claude Code, Codex, OpenCode, Pi all wire
+`verify-before-stop.mjs` to it) has a safety net if this run is ever
+bypassed: `mkdir -p .ai && touch .ai/.verify-on-stop`. This is a backstop,
+not the primary mechanism — you already have fresh, real verification
+evidence from the command you just ran. Then continue to Step 2.
 
 ## Step 2: Detect Environment
 
