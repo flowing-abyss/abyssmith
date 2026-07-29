@@ -57,15 +57,7 @@ function buildValidFixture() {
   );
 
   mkdirSync(hooksRoot, { recursive: true });
-  const verifyBeforeStopSrc = `
-const markerPath = 'x';
-if (!existsSync(markerPath)) { process.exit(0); }
-rmSync(markerPath, { force: true });
-const result = spawnSync('pnpm', ['run', 'verify'], {});
-`;
-  writeFileSync(path.join(hooksRoot, 'verify-before-stop.mjs'), verifyBeforeStopSrc);
   writeFileSync(path.join(hooksRoot, 'block-npm-commands.mjs'), '// stub\n');
-  writeFileSync(path.join(hooksRoot, 'lint-after-edit.mjs'), '// stub\n');
   writeFileSync(path.join(hooksRoot, 'inject-superpowers.mjs'), '// stub\n');
 
   const manifest = {
@@ -75,8 +67,6 @@ const result = spawnSync('pnpm', ['run', 'verify'], {});
         capabilities: {
           'session-bootstrap': 'inject-superpowers.mjs',
           'command-blocking': 'block-npm-commands.mjs',
-          'post-edit-lint': 'lint-after-edit.mjs',
-          'completion-verification': 'verify-before-stop.mjs',
         },
       },
     },
@@ -94,8 +84,6 @@ const result = spawnSync('pnpm', ['run', 'verify'], {});
         hooks: {
           SessionStart: [{ hooks: [{ command: 'inject-superpowers.mjs' }] }],
           PreToolUse: [{ hooks: [{ command: 'block-npm-commands.mjs' }] }],
-          PostToolUse: [{ hooks: [{ command: 'lint-after-edit.mjs' }] }],
-          Stop: [{ hooks: [{ command: 'verify-before-stop.mjs' }] }],
         },
       },
       null,
@@ -103,7 +91,10 @@ const result = spawnSync('pnpm', ['run', 'verify'], {});
     ),
   );
 
-  writeFileSync(path.join(repoRoot, 'README.md'), '# Fixture\n\nClaude Code only.\n');
+  writeFileSync(
+    path.join(repoRoot, 'package.json'),
+    JSON.stringify({ scripts: { verify: 'true' } }, null, 2),
+  );
 
   return { repoRoot, aiRoot };
 }
@@ -130,7 +121,7 @@ test('a reference to a nonexistent skill produces an error', () => {
 });
 
 test('a harness missing its hook registration produces an error', () => {
-  // Claude Code's settings.json exists but drops the Stop hook entirely.
+  // Claude Code's settings.json exists but drops the command-blocking hook entirely.
   const settingsPath = path.join(fixture.aiRoot, 'configs', '.claude', 'settings.json');
   writeFileSync(
     settingsPath,
@@ -138,8 +129,6 @@ test('a harness missing its hook registration produces an error', () => {
       {
         hooks: {
           SessionStart: [{ hooks: [{ command: 'inject-superpowers.mjs' }] }],
-          PreToolUse: [{ hooks: [{ command: 'block-npm-commands.mjs' }] }],
-          PostToolUse: [{ hooks: [{ command: 'lint-after-edit.mjs' }] }],
         },
       },
       null,
@@ -148,37 +137,20 @@ test('a harness missing its hook registration produces an error', () => {
   );
   const { errors } = runValidate(fixture.aiRoot);
   assert.ok(
-    errors.some((e) => /claude-code: capability "completion-verification"/.test(e)),
+    errors.some((e) => /claude-code: capability "command-blocking"/.test(e)),
     `expected a missing-capability-registration error, got: ${JSON.stringify(errors)}`,
   );
 });
 
-test('a completion hook with no marker gating produces an error', () => {
-  const file = path.join(fixture.aiRoot, 'hooks', 'verify-before-stop.mjs');
-  writeFileSync(file, "const result = spawnSync('pnpm', ['run', 'verify'], {});\n");
-  const { errors } = runValidate(fixture.aiRoot);
-  assert.ok(
-    errors.some((e) => /does not check for the completion marker/.test(e)),
-    `expected a missing-marker-gate error, got: ${JSON.stringify(errors)}`,
-  );
-});
-
-test('a completion hook with a hardcoded check list produces an error', () => {
-  const file = path.join(fixture.aiRoot, 'hooks', 'verify-before-stop.mjs');
+test('a missing canonical verify script produces an error', () => {
   writeFileSync(
-    file,
-    `
-const markerPath = 'x';
-if (!existsSync(markerPath)) { process.exit(0); }
-rmSync(markerPath, { force: true });
-const checks = ['lint', 'typecheck', 'test', 'build'];
-const result = spawnSync('pnpm', ['run', 'verify'], {});
-`,
+    path.join(fixture.repoRoot, 'package.json'),
+    JSON.stringify({ scripts: {} }, null, 2),
   );
   const { errors } = runValidate(fixture.aiRoot);
   assert.ok(
-    errors.some((e) => /hardcoded \[lint, typecheck, test, build\] list/.test(e)),
-    `expected a hardcoded-list error, got: ${JSON.stringify(errors)}`,
+    errors.some((e) => /missing the canonical "verify" script/.test(e)),
+    `expected a missing-verify-script error, got: ${JSON.stringify(errors)}`,
   );
 });
 

@@ -104,10 +104,10 @@ without either one having to re-run the skill's own routing logic:
 - **Required sources:** for framework/library-specific work
   (`skill:source-driven-development`) — the exact doc pages consulted and the
   pattern each one supports.
-- **Risk-based checks:** for behavior-changing work
-  (`skill:risk-based-verification`) — copy the task-relevant lines from that
-  skill's plan-level Risk-Based Verification section, or write "No elevated
-  risks" if that's what applies here.
+- **Risk-based checks:** only when the plan has a plan-level `## Risk-Based
+  Verification` section (`skill:risk-based-verification`) — copy this
+  task's relevant lines from it. No section at the plan level means no
+  section here either; don't add a placeholder.
 - **Observability requirements:** for a task with a failure boundary
   (`skill:observability-and-instrumentation`) — what gets a `Notice()`, what goes
   to console, confirmation there's no silent catch.
@@ -173,18 +173,21 @@ Consider exactly these four skills, in this order:
    upgrade, a deprecated/experimental API, or a case where the approved
    spec looks like it might collide with the real current API? If so, add
    that task's **Required sources** section.
-2. **`skill:risk-based-verification`** — run it now (see that skill's own
-   trigger). Add its output as the plan-level `## Risk-Based Verification`
-   section, and copy any task-relevant lines into that task's **Risk-based
-   checks** section.
+2. **`skill:risk-based-verification`** — run its quick category scan now.
+   Only if it finds something elevated, add the plan-level `## Risk-Based
+   Verification` section and copy task-relevant lines into that task's
+   **Risk-based checks** section. If nothing elevated applies, add nothing
+   — no section, not even a placeholder.
 3. **`skill:observability-and-instrumentation`** — does any task introduce a
    failure boundary (file I/O, network, parsing) that needs a defined
    user-facing error boundary? If so, add that task's **Observability
    requirements** section.
-4. **`skill:deprecation-and-migration`** — does any task remove or migrate an
-   existing system? If so, add that task's **Migration requirements**
-   section, carrying forward the replacement/compatibility/rollback
-   decisions that skill already produced during brainstorming.
+4. **`skill:deprecation-and-migration`** — does any task change an
+   external or persisted contract (settings/data format, a public API or
+   command, a user-facing feature needing a compatibility path)? If so,
+   add that task's **Migration requirements** section, carrying forward
+   the compatibility/rollback decisions that skill already produced
+   during brainstorming.
 
 Do not consider `skill:context-engineering` or `skill:releasing-an-obsidian-plugin`
 here — neither produces plan content; see `using-superpowers`' Skill
