@@ -101,19 +101,28 @@ cd "$path"
 
 ## Step 2: Project Setup
 
-Auto-detect and run appropriate setup. For a Node.js project, detect the
-package manager before installing — don't assume npm:
+Auto-detect and run appropriate setup. For a Node.js project (a
+`package.json` is present), detect the package manager before installing —
+never assume npm. Run this skill's `scripts/detect-package-manager.mjs .`
+(from this skill's own directory) — it checks, in order, package.json's
+`packageManager` field, then which lockfile is present, and prints the
+detected manager name on success.
+
+**If it exits non-zero** (status `unknown`: neither signal present, or
+`conflict`: `packageManager` and the lockfile disagree, or multiple
+lockfiles are present), it printed why on stderr — do not fall back to
+npm. Check project instructions (AGENTS.md/CLAUDE.md) for a stated package
+manager; if that's still silent, stop and ask which one to use before
+installing anything.
+
+Once a manager is known:
 
 ```bash
-# Node.js — detect the package manager, in this order:
-#   1. package.json's "packageManager" field
-#   2. which lockfile is present (pnpm-lock.yaml / yarn.lock / package-lock.json)
-#   3. project instructions (AGENTS.md / CLAUDE.md), if the above are silent
-if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile
-elif [ -f yarn.lock ]; then yarn install --frozen-lockfile
-elif [ -f package-lock.json ]; then npm ci
-elif [ -f package.json ]; then npm install  # no lockfile yet — new project, no frozen install to honor
-fi
+case "$pm" in
+  pnpm) [ -f pnpm-lock.yaml ] && pnpm install --frozen-lockfile || pnpm install ;;
+  yarn) [ -f yarn.lock ] && yarn install --immutable || yarn install ;;
+  npm)  [ -f package-lock.json ] && npm ci || npm install ;;
+esac
 
 # Rust
 if [ -f Cargo.toml ]; then cargo build; fi
@@ -125,6 +134,10 @@ if [ -f pyproject.toml ]; then poetry install; fi
 # Go
 if [ -f go.mod ]; then go mod download; fi
 ```
+
+`yarn install --immutable` is the modern (Yarn 2+/Berry) equivalent of
+`--frozen-lockfile`; use whichever the detected Yarn version actually
+supports.
 
 ## Step 3: Verify Clean Baseline
 
