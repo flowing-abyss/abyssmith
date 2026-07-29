@@ -67,6 +67,30 @@ if (conflicts > 0) {
   process.exitCode = 1;
 }
 
+// Report which harness configs are actually present, so "hooks are wired
+// up" is something this script can show, not just a claim in README.md.
+// This reports config *files exist and are linked* — it cannot verify that
+// a given harness's runtime actually executes them as intended; see
+// README.md's capability table for what's independently verified vs.
+// best-effort per the harness's published config schema.
+const harnesses = [
+  { name: 'Claude Code', dir: '.claude', configFiles: ['.claude/settings.json'] },
+  { name: 'Codex', dir: '.codex', configFiles: ['.codex/hooks.json', '.codex/config.toml'] },
+  {
+    name: 'OpenCode',
+    dir: '.opencode',
+    configFiles: ['.opencode/plugins/ai-hooks.js', 'opencode.json'],
+  },
+  { name: 'Pi', dir: '.pi', configFiles: ['.pi/extensions/pnpm-policy.ts'] },
+];
+
+console.log('\nHarness config status (file presence only, not runtime-verified):');
+for (const harness of harnesses) {
+  const missing = harness.configFiles.filter((f) => !existsSync(f));
+  const status = missing.length === 0 ? 'wired' : `missing: ${missing.join(', ')}`;
+  console.log(`  ${harness.name.padEnd(12)} ${status}`);
+}
+
 function listFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
     const entryPath = path.join(dir, entry.name);
