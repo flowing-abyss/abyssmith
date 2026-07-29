@@ -101,11 +101,19 @@ cd "$path"
 
 ## Step 2: Project Setup
 
-Auto-detect and run appropriate setup:
+Auto-detect and run appropriate setup. For a Node.js project, detect the
+package manager before installing — don't assume npm:
 
 ```bash
-# Node.js
-if [ -f package.json ]; then npm install; fi
+# Node.js — detect the package manager, in this order:
+#   1. package.json's "packageManager" field
+#   2. which lockfile is present (pnpm-lock.yaml / yarn.lock / package-lock.json)
+#   3. project instructions (AGENTS.md / CLAUDE.md), if the above are silent
+if [ -f pnpm-lock.yaml ]; then pnpm install --frozen-lockfile
+elif [ -f yarn.lock ]; then yarn install --frozen-lockfile
+elif [ -f package-lock.json ]; then npm ci
+elif [ -f package.json ]; then npm install  # no lockfile yet — new project, no frozen install to honor
+fi
 
 # Rust
 if [ -f Cargo.toml ]; then cargo build; fi
@@ -120,12 +128,9 @@ if [ -f go.mod ]; then go mod download; fi
 
 ## Step 3: Verify Clean Baseline
 
-Run tests to ensure workspace starts clean:
-
-```bash
-# Use project-appropriate command
-npm test / cargo test / pytest / go test ./...
-```
+Run tests using the same package manager detected in Step 2 (`pnpm test`,
+`yarn test`, or `npm test` for Node.js; `cargo test` / `pytest` /
+`go test ./...` for the others) to ensure the workspace starts clean.
 
 **If tests fail:** Report failures, ask whether to proceed or investigate.
 
