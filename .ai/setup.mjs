@@ -31,6 +31,7 @@ import {
   mkdirSync,
   readdirSync,
   readlinkSync,
+  realpathSync,
   statSync,
   symlinkSync,
 } from 'node:fs';
@@ -105,19 +106,13 @@ function ensureLink(linkPath, targetPath) {
     return 'conflict';
   }
 
-  // POSIX symlinks and Windows junctions both resolve/report through the
-  // same fs.symlinkSync/readlinkSync API; hard links and copies don't.
-  const usesSymlinkApi = !isWindows || isDirTarget;
+  const linkKind = !isWindows ? 'symlink' : isDirTarget ? 'junction' : 'hardlink';
   const relativeTarget = path.relative(path.dirname(linkPath), targetPath);
-  const absoluteTarget = path.resolve(targetPath);
-  // Windows junctions always store (and readlinkSync returns) an absolute
-  // path; POSIX symlinks use the relative target we pass to symlinkSync.
-  const expectedLinkValue = isWindows && isDirTarget ? absoluteTarget : relativeTarget;
 
   mkdirSync(path.dirname(linkPath), { recursive: true });
 
   if (existsSync(linkPath) || isBrokenSymlink(linkPath)) {
-    if (isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSymlinkApi)) {
+    if (isExistingLinkCorrect(linkPath, targetPath, relativeTarget, linkKind)) {
       console.log(`ok       ${linkPath}`);
       return 'skipped';
     }
@@ -163,7 +158,7 @@ function createLink(linkPath, targetPath, relativeTarget, isDirTarget) {
   linkSync(targetPath, linkPath);
 }
 
-function isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSymlinkApi) {
+function isExistingLinkCorrect(linkPath, targetPath, relativeTarget, linkKind) {
   let stat;
   try {
     stat = lstatSync(linkPath);
@@ -171,11 +166,29 @@ function isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSyml
     return false;
   }
 
-  if (usesSymlinkApi) {
-    return stat.isSymbolicLink() && readlinkSync(linkPath) === expectedLinkValue;
+  if (linkKind === 'symlink') {
+    // POSIX: exact-match the relative target we pass to symlinkSync — this
+    // also confirms it's a *relative* symlink, matching what we create.
+    return stat.isSymbolicLink() && readlinkSync(linkPath) === relativeTarget;
   }
 
-  // Windows file link: correct only if it's a real hard link (same inode)
+  if (linkKind === 'junction') {
+    // Windows junctions are reported as symbolic links by lstat, but
+    // readlinkSync returns the raw stored target text (often an NT device
+    // path like \\?\D:\...), which won't string-match a plain
+    // path.resolve() even for a genuinely correct junction. Resolve both
+    // sides through the filesystem instead of comparing stored text.
+    if (!stat.isSymbolicLink()) {
+      return false;
+    }
+    try {
+      return realpathSync(linkPath) === realpathSync(targetPath);
+    } catch {
+      return false;
+    }
+  }
+
+  // Windows hard link: correct only if it's a real hard link (same inode)
   // to the source — no copy fallback exists to also treat as correct.
   if (!stat.isFile()) {
     return false;
