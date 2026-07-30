@@ -104,11 +104,11 @@ without either one having to re-run the skill's own routing logic:
 - **Required sources:** for framework/library-specific work
   (`skill:source-driven-development`) — the exact doc pages consulted and the
   pattern each one supports.
-- **Risk-based checks:** only when the plan has a plan-level `## Risk Scan`
+- **Risk checks:** only when the plan has a plan-level `## Risk Scan`
   section (see Risk Scan below) — copy this task's relevant lines from it.
   No section at the plan level means no section here either; don't add a
   placeholder.
-- **Observability requirements:** for a task with a failure boundary
+- **Failure-handling requirements:** for a task with a failure boundary
   (`skill:handling-plugin-failures`) — what gets a `Notice()`, what goes
   to console, confirmation there's no silent catch.
 - **Migration requirements:** for a task derived from a deprecation/migration
@@ -173,10 +173,12 @@ Consider exactly these three skills, in this order:
    upgrade, a deprecated/experimental API, or a case where the approved
    spec looks like it might collide with the real current API? If so, add
    that task's **Required sources** section.
-2. **`skill:handling-plugin-failures`** — does any task introduce a
-   failure boundary (file I/O, network, parsing) that needs a defined
-   user-facing error boundary? If so, add that task's **Observability
-   requirements** section.
+2. **`skill:handling-plugin-failures`** — does any task add a new
+   user-triggered or background operation that could fail without a
+   clear message or diagnostics, touch an existing silent catch/unhandled
+   rejection, or introduce a failure boundary with no established project
+   pattern yet? If so, add that task's **Failure-handling requirements**
+   section. Not for routine I/O repeating an already-established pattern.
 3. **`skill:deprecation-and-migration`** — does any task change an
    external or persisted contract (settings/data format, a public API or
    command, a user-facing feature needing a compatibility path)? If so,
@@ -196,7 +198,7 @@ custom skill → concrete plan requirements → task brief → implementer → r
 ```
 
 For each applicable skill, translate its finding into one of the Task
-Structure's optional sections (or the plan-level Risk-Based Verification
+Structure's optional sections (or the plan-level Risk Scan
 section) — never leave an implementer or reviewer needing to re-run a
 skill's own routing logic themselves. `task-brief` carries the plan's
 Global Constraints and each task's own optional sections straight into

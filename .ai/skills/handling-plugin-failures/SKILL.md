@@ -1,6 +1,6 @@
 ---
 name: handling-plugin-failures
-description: Makes plugin failures visible to the user and diagnosable from a bug report, without telemetry. Use when adding any file I/O, network call, or parsing step that can fail. Use when a user reports "it doesn't work" with no other detail.
+description: Defines the user-facing error boundary and diagnostic logging for a new failure-prone operation. Use for a new user-triggered or background operation that could fail without a clear message, an existing silent catch or unhandled rejection, or a new boundary with no established failure-handling pattern yet. Not for routine I/O that repeats an already-established project pattern.
 ---
 
 # Handling Plugin Failures
@@ -13,10 +13,18 @@ developer reading the bug report has enough to reproduce it.
 
 ## When to use
 
-- Any `app.vault`/`app.fileManager` read, write, or path resolution that can fail
-- Any `fetch`/network call (already requires disclosure per AGENTS.md — pair it with visible failure handling)
-- Any parsing of user-authored content (settings JSON, a vault config file)
-- A silent `catch {}` or a promise with no `.catch`
+Required when at least one of these is true:
+
+- a new user-triggered operation could finish without a clear message on failure
+- a new background operation could fail without updating visible state or logging diagnostics
+- existing code has a silent `catch {}` or a promise with no `.catch`
+- the new failure boundary has no established project pattern to follow yet
+
+**Not required — do not activate for:**
+
+- a vault/file/network operation that repeats an already-established project pattern
+- a task whose error boundary is already defined in the plan or an approved `Interfaces` block
+- a mechanical change that doesn't alter failure behavior
 
 ## One user-facing error boundary
 

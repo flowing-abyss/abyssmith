@@ -80,6 +80,19 @@ test('inject-superpowers.mjs is registered in the Claude Code and Codex configs'
   assert.match(codex, /inject-superpowers\.mjs/);
 });
 
+test('every Codex command hook has a commandWindows counterpart', () => {
+  const codex = JSON.parse(readFileSync(path.join(configsRoot, '.codex', 'hooks.json'), 'utf8'));
+  const commandHooks = Object.values(codex.hooks)
+    .flat()
+    .flatMap((entry) => entry.hooks)
+    .filter((hook) => hook.type === 'command');
+
+  assert.ok(commandHooks.length > 0, 'no command hooks found in .codex/hooks.json');
+  for (const hook of commandHooks) {
+    assert.ok(hook.commandWindows, `missing commandWindows for: ${hook.command}`);
+  }
+});
+
 test('block-npm-commands.mjs is registered in all four harness configs', () => {
   const configFiles = [
     path.join(configsRoot, '.claude', 'settings.json'),

@@ -8,17 +8,37 @@
 //
 //   node .ai/setup.mjs
 //
-// Safe to re-run: existing correct symlinks are left alone, and anything that isn't
-// already the expected symlink is reported and skipped rather than overwritten.
+// Safe to re-run: existing correct links are left alone, and anything that isn't
+// already the expected link is reported and skipped rather than overwritten.
 //
 // `.ai/configs/` is laid out as a literal mirror of the repo root — e.g.
 // `.ai/configs/.codex/hooks.json` becomes `<repo-root>/.codex/hooks.json`.
 // To wire up a new agent config, just add the file at its real repo-root-relative
 // path under `.ai/configs/` and re-run this script; nothing else to edit.
+//
+// Real symlinks require Administrator privileges or Windows Developer Mode,
+// so `pnpm install` would fail on an ordinary Windows account. Directory
+// links use junctions instead (no elevation needed); file links use hard
+// links, falling back to a plain copy if the filesystem can't hard-link
+// (e.g. across volumes). Both are POSIX no-ops — `type` is ignored there.
 
-import { existsSync, lstatSync, mkdirSync, readdirSync, readlinkSync, symlinkSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  linkSync,
+  lstatSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  readlinkSync,
+  statSync,
+  symlinkSync,
+} from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+
+const isWindows = process.platform === 'win32';
 
 const aiRoot = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.join(aiRoot, '..');
@@ -38,9 +58,11 @@ const links = [
 
   // AGENTS.md is the canonical agent-instructions file (mirrored from
   // `.ai/configs/AGENTS.md` below, like everything else). CLAUDE.md is
-  // just a name Claude Code specifically looks for, so it's a second hop
-  // pointing at AGENTS.md instead of carrying its own copy of the content.
-  ['CLAUDE.md', 'AGENTS.md'],
+  // just a name Claude Code specifically looks for, so it links straight to
+  // the same real source rather than to the generated AGENTS.md link — that
+  // way it doesn't depend on link-creation order or a generated link's
+  // still-linkable state.
+  ['CLAUDE.md', path.join('.ai/configs', 'AGENTS.md')],
 
   // Hooks + MCP config: every file under `.ai/configs/` mirrored to the
   // same relative path at the repo root.
@@ -55,7 +77,7 @@ let skipped = 0;
 let conflicts = 0;
 
 for (const [linkPath, targetPath] of links) {
-  const result = ensureSymlink(linkPath, targetPath);
+  const result = ensureLink(linkPath, targetPath);
   if (result === 'created') created += 1;
   if (result === 'skipped') skipped += 1;
   if (result === 'conflict') conflicts += 1;
@@ -74,28 +96,99 @@ function listFiles(dir) {
   });
 }
 
-function ensureSymlink(linkPath, targetPath) {
+function ensureLink(linkPath, targetPath) {
+  let isDirTarget;
+  try {
+    isDirTarget = statSync(targetPath).isDirectory();
+  } catch (error) {
+    console.log(`conflict ${linkPath}: source ${targetPath} does not exist (${error.message})`);
+    return 'conflict';
+  }
+
+  // POSIX symlinks and Windows junctions both resolve/report through the
+  // same fs.symlinkSync/readlinkSync API; hard links and copies don't.
+  const usesSymlinkApi = !isWindows || isDirTarget;
   const relativeTarget = path.relative(path.dirname(linkPath), targetPath);
+  const absoluteTarget = path.resolve(targetPath);
+  // Windows junctions always store (and readlinkSync returns) an absolute
+  // path; POSIX symlinks use the relative target we pass to symlinkSync.
+  const expectedLinkValue = isWindows && isDirTarget ? absoluteTarget : relativeTarget;
 
   mkdirSync(path.dirname(linkPath), { recursive: true });
 
   if (existsSync(linkPath) || isBrokenSymlink(linkPath)) {
-    const stat = lstatSync(linkPath);
-
-    if (stat.isSymbolicLink() && readlinkSync(linkPath) === relativeTarget) {
+    if (isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSymlinkApi)) {
       console.log(`ok       ${linkPath}`);
       return 'skipped';
     }
 
+    console.log(`conflict ${linkPath} (exists and is not the expected link to ${relativeTarget})`);
+    return 'conflict';
+  }
+
+  try {
+    createLink(linkPath, targetPath, relativeTarget, isDirTarget);
+  } catch (error) {
     console.log(
-      `conflict ${linkPath} (exists and is not the expected symlink to ${relativeTarget})`,
+      `conflict ${linkPath}: could not create link to ${relativeTarget} (${error.message})`,
     );
     return 'conflict';
   }
 
-  symlinkSync(relativeTarget, linkPath);
   console.log(`created  ${linkPath} -> ${relativeTarget}`);
   return 'created';
+}
+
+function createLink(linkPath, targetPath, relativeTarget, isDirTarget) {
+  if (!isWindows) {
+    symlinkSync(relativeTarget, linkPath);
+    return;
+  }
+
+  if (isDirTarget) {
+    // `type: 'junction'` needs no elevation, unlike a real directory symlink.
+    // Node normalizes the target to an absolute path for junctions itself.
+    symlinkSync(targetPath, linkPath, 'junction');
+    return;
+  }
+
+  try {
+    // Hard link: no elevation needed, but same-volume only.
+    linkSync(targetPath, linkPath);
+  } catch {
+    // Cross-volume or an unsupporting filesystem — a plain copy still gets
+    // the harness working; it just won't reflect future edits to the source
+    // until setup.mjs is re-run.
+    copyFileSync(targetPath, linkPath);
+  }
+}
+
+function isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSymlinkApi) {
+  let stat;
+  try {
+    stat = lstatSync(linkPath);
+  } catch {
+    return false;
+  }
+
+  if (usesSymlinkApi) {
+    return stat.isSymbolicLink() && readlinkSync(linkPath) === expectedLinkValue;
+  }
+
+  // Windows file link: correct if it's a real hard link (same inode) to the
+  // source, or — for the copy fallback — has identical content.
+  if (!stat.isFile()) {
+    return false;
+  }
+  const targetStat = statSync(targetPath);
+  if (stat.dev === targetStat.dev && stat.ino === targetStat.ino) {
+    return true;
+  }
+  try {
+    return readFileSync(linkPath).equals(readFileSync(targetPath));
+  } catch {
+    return false;
+  }
 }
 
 function isBrokenSymlink(linkPath) {

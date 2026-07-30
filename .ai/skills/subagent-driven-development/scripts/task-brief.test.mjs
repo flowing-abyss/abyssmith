@@ -28,7 +28,7 @@ const FIXTURE_PLAN = `# Fixture Implementation Plan
 
 ### Task 2: Second Component
 
-**Observability requirements:**
+**Failure-handling requirements:**
 - vault reads get a Notice() on failure
 
 - [ ] **Step 1: Do the thing**
@@ -98,21 +98,21 @@ test('CLI: Task 1 brief contains Global Constraints and its own Required sources
   assert.match(content, /useActionState/);
 });
 
-test('CLI: Task 1 brief does not contain Task 2 or its Observability section', () => {
+test('CLI: Task 1 brief does not contain Task 2 or its Failure-handling section', () => {
   const out = path.join(tmpDir, 'task-1-brief-2.md');
   const content = runTaskBrief(1, out);
   assert.doesNotMatch(content, /Task 2: Second Component/);
-  assert.doesNotMatch(content, /Observability requirements/);
+  assert.doesNotMatch(content, /Failure-handling requirements/);
   assert.doesNotMatch(content, /Notice\(\) on failure/);
 });
 
-test('CLI: Task 2 brief contains Global Constraints and its own Observability requirements', () => {
+test('CLI: Task 2 brief contains Global Constraints and its own Failure-handling requirements', () => {
   const out = path.join(tmpDir, 'task-2-brief.md');
   const content = runTaskBrief(2, out);
   assert.match(content, /Global Constraints/);
   assert.match(content, /Node version: 22\+/);
   assert.match(content, /Task 2: Second Component/);
-  assert.match(content, /Observability requirements/);
+  assert.match(content, /Failure-handling requirements/);
   assert.match(content, /Notice\(\) on failure/);
 });
 
