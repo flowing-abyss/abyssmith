@@ -1,5 +1,5 @@
 {
-  "description": "Project-local pnpm policy.",
+  "description": "Project-local Superpowers bootstrap and pnpm policy.",
   "hooks": {
     "SessionStart": [
       {
@@ -8,6 +8,7 @@
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.ai/hooks/inject-superpowers.mjs\"",
+            "commandWindows": "powershell -NoProfile -Command \"node (Join-Path (git rev-parse --show-toplevel) '.ai/hooks/inject-superpowers.mjs')\"",
             "async": false,
             "timeout": 10,
             "statusMessage": "Loading superpowers skill-check instructions"
@@ -22,6 +23,7 @@
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.ai/hooks/block-npm-commands.mjs\"",
+            "commandWindows": "powershell -NoProfile -Command \"node (Join-Path (git rev-parse --show-toplevel) '.ai/hooks/block-npm-commands.mjs')\"",
             "timeout": 10,
             "statusMessage": "Enforcing pnpm policy"
           }
