@@ -9,8 +9,9 @@
 // or as part of `pnpm run verify`, which runs it right after `pnpm run build`.
 //
 // `--release-ready` additionally fails on unfilled template placeholders
-// (manifest.id/name/author/description, package.json's name) — off by default
-// so a clean, unmodified template still passes `pnpm verify`. `preversion` runs
+// (manifest.id/name/author/description, package.json's name, LICENSE's
+// copyright holder, styles.css's example selector) — off by default so a
+// clean, unmodified template still passes `pnpm verify`. `preversion` runs
 // with the flag, since an actual release must not ship placeholder metadata.
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
@@ -54,6 +55,8 @@ checkPackageJsonManifestAgreement(manifest, packageJson);
 checkReleaseTag(manifest);
 if (releaseReady) {
   checkNoPlaceholders(manifest, packageJson);
+  checkLicensePlaceholder();
+  checkStylesCssPlaceholder();
 }
 
 if (errors.length > 0) {
@@ -224,6 +227,32 @@ function checkNoPlaceholders(manifest, packageJson) {
   if (packageJson !== null && packageJson.name === PLACEHOLDER_VALUES['package.json#name']) {
     errors.push(
       `package.json "name" is still the template placeholder ("${PLACEHOLDER_VALUES['package.json#name']}").`,
+    );
+  }
+}
+
+function checkLicensePlaceholder() {
+  if (!existsSync('LICENSE')) {
+    return;
+  }
+
+  const license = readFileSync('LICENSE', 'utf8');
+  if (license.includes('Copyright (c) 2026 Your Name')) {
+    errors.push(
+      'LICENSE still lists "Your Name" as the copyright holder — replace it with the real one.',
+    );
+  }
+}
+
+function checkStylesCssPlaceholder() {
+  if (!existsSync('styles.css')) {
+    return;
+  }
+
+  const styles = readFileSync('styles.css', 'utf8');
+  if (styles.includes('.your-id-here-example')) {
+    errors.push(
+      'styles.css still contains the template selector ".your-id-here-example" — rename it to match the plugin ID, or remove styles.css if it is unused.',
     );
   }
 }

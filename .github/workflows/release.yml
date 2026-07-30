@@ -42,6 +42,7 @@ jobs:
           [ -f styles.css ] && echo "exists=true" >> "$GITHUB_OUTPUT" || echo "exists=false" >> "$GITHUB_OUTPUT"
 
       - name: Attest build provenance
+        if: ${{ !github.event.repository.private }}
         uses: actions/attest@v4
         with:
           subject-path: |
