@@ -2,7 +2,7 @@
 
 Reference template for an Obsidian Community Plugin (TypeScript → `main.js` via esbuild). Read `src/main.ts`/`src/settings.ts` for the real code pattern, and run `pnpm run <script>` to see what's available — this file only covers what isn't already enforced by config/tooling or discoverable that way.
 
-At the start of an agent session, load and follow the `using-superpowers` skill before taking action. Specifically dispatched subagents should follow their task brief instead.
+Before taking action, ensure the `using-superpowers` skill is active. Specifically dispatched subagents follow their task brief instead.
 
 ## Manual UI verification
 

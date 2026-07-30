@@ -1,8 +1,13 @@
 #!/usr/bin/env node
 
-import path from 'node:path';
+// Best-effort guardrail against npm/npx commands in this pnpm-only project.
+// Not a security boundary — an agent isn't trying to evade this — just a
+// catch for the ordinary "typed npm instead of pnpm" mistake. Catches the
+// common forms (npm ..., npx ..., sudo npm ..., env FOO=bar npm ...,
+// command1 && npm ..., command1; npx ...) with a few small functions, not
+// a full shell parser — nested subshells, quoting, and every possible
+// wrapper combination are out of scope on purpose.
 
-// Read the hook payload supplied by Claude Code or Codex.
 const input = await readStdinJson();
 const command = input?.tool_input?.command;
 
@@ -10,14 +15,14 @@ if (typeof command !== 'string' || command.trim() === '') {
   process.exit(0);
 }
 
-const blockedExecutable = findBlockedExecutable(command);
+const blocked = findBlockedExecutable(command);
 
-if (!blockedExecutable) {
+if (!blocked) {
   process.exit(0);
 }
 
 const replacement =
-  blockedExecutable === 'npx'
+  blocked === 'npx'
     ? 'Use `pnpm exec <binary>` for local dependencies or `pnpm dlx <package>` for one-off packages.'
     : 'Use the equivalent `pnpm` command.';
 
@@ -26,7 +31,7 @@ process.stdout.write(
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
       permissionDecision: 'deny',
-      permissionDecisionReason: `This project uses pnpm. Direct execution of \`${blockedExecutable}\` is blocked. ${replacement}`,
+      permissionDecisionReason: `This project uses pnpm. Direct execution of \`${blocked}\` is blocked. ${replacement}`,
     },
   }),
 );
@@ -46,197 +51,47 @@ async function readStdinJson() {
   }
 }
 
+// Splits on common shell command separators (&&, ||, ;, |). Deliberately
+// NOT splitting on newlines: a multi-line heredoc or commit message passed
+// as a single quoted argument (e.g. `git commit -m "$(cat <<'EOF' ... )"`)
+// contains real newlines that aren't command separators — splitting on
+// them turned prose mentioning "npm"/"npx" on its own line into a false
+// positive. Not quote-aware otherwise either — a separator inside a quoted
+// string would still split — good enough for an ordinary chained command,
+// not a shell-accurate parse.
 function findBlockedExecutable(commandText) {
-  for (const segment of splitShellCommands(commandText)) {
-    const tokens = tokenizeShellSegment(segment);
-    const result = inspectCommandTokens(tokens);
-
-    if (result) {
-      return result;
+  for (const segment of commandText.split(/&&|\|\||[;|]/)) {
+    const blocked = checkSegment(segment.trim());
+    if (blocked) {
+      return blocked;
     }
   }
-
   return null;
 }
 
-function splitShellCommands(commandText) {
-  const segments = [];
-  let current = '';
-  let quote = null;
-  let escaped = false;
+function checkSegment(segment) {
+  let words = segment.split(/\s+/).filter(Boolean);
 
-  for (let index = 0; index < commandText.length; index += 1) {
-    const character = commandText[index];
+  words = dropWhile(words, isEnvironmentAssignment);
 
-    if (escaped) {
-      current += character;
-      escaped = false;
-      continue;
-    }
-
-    if (character === '\\' && quote !== "'") {
-      current += character;
-      escaped = true;
-      continue;
-    }
-
-    if (quote) {
-      current += character;
-      if (character === quote) {
-        quote = null;
-      }
-      continue;
-    }
-
-    if (character === "'" || character === '"' || character === '`') {
-      quote = character;
-      current += character;
-      continue;
-    }
-
-    if (
-      character === ';' ||
-      character === '\n' ||
-      character === '|' ||
-      character === '&' ||
-      character === '(' ||
-      character === ')'
-    ) {
-      if (current.trim()) {
-        segments.push(current.trim());
-      }
-      current = '';
-      continue;
-    }
-
-    current += character;
+  // Unwrap sudo/env (plus any flags or assignments they take) once.
+  if (words[0] === 'sudo' || words[0] === 'env') {
+    words = words.slice(1);
+    words = dropWhile(words, (w) => w.startsWith('-') || isEnvironmentAssignment(w));
   }
 
-  if (current.trim()) {
-    segments.push(current.trim());
-  }
-
-  return segments;
+  const executable = words[0]?.split('/').pop();
+  return executable === 'npm' || executable === 'npx' ? executable : null;
 }
 
-function tokenizeShellSegment(segment) {
-  const tokens = [];
-  let current = '';
-  let quote = null;
-  let escaped = false;
-
-  for (const character of segment) {
-    if (escaped) {
-      current += character;
-      escaped = false;
-      continue;
-    }
-
-    if (character === '\\' && quote !== "'") {
-      escaped = true;
-      continue;
-    }
-
-    if (quote) {
-      if (character === quote) {
-        quote = null;
-      } else {
-        current += character;
-      }
-      continue;
-    }
-
-    if (character === "'" || character === '"' || character === '`') {
-      quote = character;
-      continue;
-    }
-
-    if (/\s/.test(character)) {
-      if (current) {
-        tokens.push(current);
-        current = '';
-      }
-      continue;
-    }
-
-    current += character;
-  }
-
-  if (current) {
-    tokens.push(current);
-  }
-
-  return tokens;
-}
-
-function inspectCommandTokens(tokens) {
-  if (tokens.length === 0) {
-    return null;
-  }
-
+function dropWhile(words, predicate) {
   let index = 0;
-
-  // Skip leading environment-variable assignments.
-  while (index < tokens.length && isEnvironmentAssignment(tokens[index])) {
+  while (index < words.length && predicate(words[index])) {
     index += 1;
   }
-
-  // Unwrap common command launchers before inspecting the actual executable.
-  while (index < tokens.length) {
-    const wrapper = path.basename(tokens[index]);
-
-    if (
-      wrapper === 'sudo' ||
-      wrapper === 'command' ||
-      wrapper === 'builtin' ||
-      wrapper === 'nohup' ||
-      wrapper === 'time'
-    ) {
-      index += 1;
-      while (index < tokens.length && tokens[index].startsWith('-')) {
-        index += 1;
-      }
-      continue;
-    }
-
-    if (wrapper === 'env') {
-      index += 1;
-      while (
-        index < tokens.length &&
-        (tokens[index].startsWith('-') || isEnvironmentAssignment(tokens[index]))
-      ) {
-        index += 1;
-      }
-      continue;
-    }
-
-    break;
-  }
-
-  if (index >= tokens.length) {
-    return null;
-  }
-
-  const executable = path.basename(tokens[index]);
-
-  if (executable === 'npm' || executable === 'npx') {
-    return executable;
-  }
-
-  // Inspect commands passed through a shell with -c or -lc.
-  if (['bash', 'sh', 'zsh', 'dash'].includes(executable)) {
-    const commandFlagIndex = tokens.findIndex(
-      (token, tokenIndex) => tokenIndex > index && /^-[^-]*c/.test(token),
-    );
-
-    if (commandFlagIndex !== -1 && tokens[commandFlagIndex + 1]) {
-      return findBlockedExecutable(tokens[commandFlagIndex + 1]);
-    }
-  }
-
-  return null;
+  return words.slice(index);
 }
 
-function isEnvironmentAssignment(token) {
-  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(token);
+function isEnvironmentAssignment(word) {
+  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(word);
 }

@@ -104,12 +104,12 @@ without either one having to re-run the skill's own routing logic:
 - **Required sources:** for framework/library-specific work
   (`skill:source-driven-development`) — the exact doc pages consulted and the
   pattern each one supports.
-- **Risk-based checks:** only when the plan has a plan-level `## Risk-Based
-  Verification` section (`skill:risk-based-verification`) — copy this
-  task's relevant lines from it. No section at the plan level means no
-  section here either; don't add a placeholder.
+- **Risk-based checks:** only when the plan has a plan-level `## Risk Scan`
+  section (see Risk Scan below) — copy this task's relevant lines from it.
+  No section at the plan level means no section here either; don't add a
+  placeholder.
 - **Observability requirements:** for a task with a failure boundary
-  (`skill:observability-and-instrumentation`) — what gets a `Notice()`, what goes
+  (`skill:handling-plugin-failures`) — what gets a `Notice()`, what goes
   to console, confirmation there's no silent catch.
 - **Migration requirements:** for a task derived from a deprecation/migration
   decision (`skill:deprecation-and-migration`) — the replacement, compatibility
@@ -166,32 +166,28 @@ actually apply, and folding what applies straight into the plan. This is
 not a new approval checkpoint — nothing pauses for it, and it produces no
 sections for skills that don't apply.
 
-Consider exactly these four skills, in this order:
+Consider exactly these three skills, in this order:
 
 1. **`skill:source-driven-development`** — does any task involve an unfamiliar
    API, a version-sensitive pattern, a new dependency, a library/framework
    upgrade, a deprecated/experimental API, or a case where the approved
    spec looks like it might collide with the real current API? If so, add
    that task's **Required sources** section.
-2. **`skill:risk-based-verification`** — run its quick category scan now.
-   Only if it finds something elevated, add the plan-level `## Risk-Based
-   Verification` section and copy task-relevant lines into that task's
-   **Risk-based checks** section. If nothing elevated applies, add nothing
-   — no section, not even a placeholder.
-3. **`skill:observability-and-instrumentation`** — does any task introduce a
+2. **`skill:handling-plugin-failures`** — does any task introduce a
    failure boundary (file I/O, network, parsing) that needs a defined
    user-facing error boundary? If so, add that task's **Observability
    requirements** section.
-4. **`skill:deprecation-and-migration`** — does any task change an
+3. **`skill:deprecation-and-migration`** — does any task change an
    external or persisted contract (settings/data format, a public API or
    command, a user-facing feature needing a compatibility path)? If so,
    add that task's **Migration requirements** section, carrying forward
    the compatibility/rollback decisions that skill already produced
    during brainstorming.
 
-Do not consider `skill:context-engineering` or `skill:releasing-an-obsidian-plugin`
-here — neither produces plan content; see `using-superpowers`' Skill
-Priority table for where they actually sit.
+Do not consider `skill:releasing-an-obsidian-plugin` here — it doesn't
+produce plan content; see `using-superpowers`' Skill Priority table for
+where it sits. The risk scan below is a step in this skill, not a
+separate skill to route to.
 
 **Dataflow this pass exists to guarantee:**
 
@@ -207,6 +203,34 @@ Global Constraints and each task's own optional sections straight into
 the brief, so this is the one place that translation needs to happen. Add
 a section only where a skill actually applies; an inapplicable skill gets
 no section, not an empty one.
+
+## Risk Scan
+
+Quickly check whether the plan has elevated risk involving:
+
+- persisted user data or migration;
+- compatibility with existing settings or public contracts;
+- security or secret handling;
+- filesystem, vault, network, or another real external boundary;
+- concurrency, retries, or partial failure;
+- a critical user workflow that unit tests cannot prove.
+
+If no elevated risk applies, add nothing — no section, not even a placeholder.
+
+If elevated risk applies, add a compact `## Risk Scan` plan section listing:
+
+```markdown
+## Risk Scan
+
+- Persistence: settings schema gains a new required field
+  Check: migration test — old settings.json (pre-field) loads without throwing
+```
+
+- the applicable risk;
+- the concrete executable check that covers it.
+
+This has no lifecycle of its own — it's a step in this skill, run once
+while building the plan, not a separate approval checkpoint or artifact.
 
 ## Self-Review
 
