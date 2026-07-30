@@ -1,6 +1,7 @@
 {
   "name": "your-id-here",
-  "version": "0.1.2",
+  "version": "0.1.0",
+  "private": true,
   "description": "Describe what this does in one sentence.",
   "main": "main.js",
   "type": "module",
