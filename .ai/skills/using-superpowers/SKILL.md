@@ -32,16 +32,19 @@ When multiple skills apply, process skills come first — they set the approach,
 
 ### This template's additional skills
 
-This template vendors six skills beyond stock Superpowers. They aren't a separate system — they slot into the same process/implementation ordering above, at these points:
+This template vendors four skills beyond stock Superpowers. They aren't a separate system — they slot into the same process/implementation ordering above, at these points:
 
 | Trigger | Skill | Where it sits |
 |---------|-------|----------------|
-| Rules files are missing or need setup, agent output quality has visibly degraded, or you're switching into an unfamiliar area of the codebase | `context-engineering` | Diagnostic/setup skill, not a step in the build loop — invoke only when one of its own triggers fires, not by default at every session start. Never a substitute for `brainstorming`/`writing-plans` on an actual task. |
 | An unfamiliar or version-sensitive API, a new dependency, a library/framework upgrade, a deprecated/experimental API, or existing code that looks incompatible with current docs — not routine use of an API already established in the codebase | `source-driven-development` | Runs during `writing-plans`' applicability pass and alongside implementation — cites official docs instead of implementing from memory. Verifies API usage; does not override an approved spec/plan or existing project conventions. |
-| During `writing-plans`' applicability pass, while the implementation plan is being built (not after it's approved) | `risk-based-verification` | Runs inside plan construction, before `writing-plans`' Self-Review and execution handoff — complements Superpowers' TDD and verification skills, doesn't replace them. Its output is a short section inside the plan, not a separate mandatory stage. |
-| A feature can fail silently (file I/O, network, parsing) and the user would have no way to tell why | `observability-and-instrumentation` | Part of implementation, before `finishing-a-development-branch` — visible errors ship with the feature, not after. |
+| A feature can fail silently (file I/O, network, parsing) and the user would have no way to tell why | `handling-plugin-failures` | Part of implementation, before `finishing-a-development-branch` — visible errors ship with the feature, not after. |
 | A change touches an external or persisted contract (settings/data format, a public API/command, a user-facing feature needing a compatibility path) — not internal refactoring or dead-code removal | `deprecation-and-migration` | Runs before `brainstorming` on contract-changing requests, to answer the five questions (what's changing, what depends on it, migration/fallback, rollback, safe-removal timing) — design approval and planning still go through `brainstorming` → `writing-plans` afterward. Not a replacement for either. |
 | Cutting a release — bumping the version, tagging, publishing | `releasing-an-obsidian-plugin` | A separate, self-contained flow after `finishing-a-development-branch`, run only on an explicit release request — not part of the build loop and never triggered automatically by finishing a branch. |
+
+A quick risk scan and context setup are no longer separate skills — the risk
+scan is a short step inside `writing-plans` (see that skill), and context
+management is the ordinary responsibility of project instructions, plans,
+task briefs, and the agent itself.
 
 ## Red Flags
 
