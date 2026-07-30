@@ -112,12 +112,15 @@ function ensureLink(linkPath, targetPath) {
   mkdirSync(path.dirname(linkPath), { recursive: true });
 
   if (existsSync(linkPath) || isBrokenSymlink(linkPath)) {
-    if (isExistingLinkCorrect(linkPath, targetPath, relativeTarget, linkKind)) {
+    const check = isExistingLinkCorrect(linkPath, targetPath, relativeTarget, linkKind);
+    if (check.ok) {
       console.log(`ok       ${linkPath}`);
       return 'skipped';
     }
 
-    console.log(`conflict ${linkPath} (exists and is not the expected link to ${relativeTarget})`);
+    console.log(
+      `conflict ${linkPath} (exists and is not the expected link to ${relativeTarget}: ${check.reason})`,
+    );
     return 'conflict';
   }
 
@@ -158,18 +161,27 @@ function createLink(linkPath, targetPath, relativeTarget, isDirTarget) {
   linkSync(targetPath, linkPath);
 }
 
+// Returns { ok, reason } rather than a bare boolean so a genuine conflict
+// (not just a broken assumption in this function) tells the user exactly
+// what was found instead of a generic "not the expected link".
 function isExistingLinkCorrect(linkPath, targetPath, relativeTarget, linkKind) {
   let stat;
   try {
     stat = lstatSync(linkPath);
-  } catch {
-    return false;
+  } catch (error) {
+    return { ok: false, reason: `could not stat existing path (${error.message})` };
   }
 
   if (linkKind === 'symlink') {
     // POSIX: exact-match the relative target we pass to symlinkSync — this
     // also confirms it's a *relative* symlink, matching what we create.
-    return stat.isSymbolicLink() && readlinkSync(linkPath) === relativeTarget;
+    if (!stat.isSymbolicLink()) {
+      return { ok: false, reason: `existing path is not a symlink (${describeStat(stat)})` };
+    }
+    const actual = readlinkSync(linkPath);
+    return actual === relativeTarget
+      ? { ok: true }
+      : { ok: false, reason: `symlink points to "${actual}", expected "${relativeTarget}"` };
   }
 
   if (linkKind === 'junction') {
@@ -179,22 +191,41 @@ function isExistingLinkCorrect(linkPath, targetPath, relativeTarget, linkKind) {
     // path.resolve() even for a genuinely correct junction. Resolve both
     // sides through the filesystem instead of comparing stored text.
     if (!stat.isSymbolicLink()) {
-      return false;
+      return { ok: false, reason: `existing path is not a junction (${describeStat(stat)})` };
+    }
+    let linkReal;
+    let targetReal;
+    try {
+      linkReal = realpathSync(linkPath);
+    } catch (error) {
+      return { ok: false, reason: `could not resolve the junction's real path (${error.message})` };
     }
     try {
-      return realpathSync(linkPath) === realpathSync(targetPath);
-    } catch {
-      return false;
+      targetReal = realpathSync(targetPath);
+    } catch (error) {
+      return { ok: false, reason: `could not resolve the source's real path (${error.message})` };
     }
+    return linkReal === targetReal
+      ? { ok: true }
+      : { ok: false, reason: `junction resolves to "${linkReal}", expected "${targetReal}"` };
   }
 
   // Windows hard link: correct only if it's a real hard link (same inode)
   // to the source — no copy fallback exists to also treat as correct.
   if (!stat.isFile()) {
-    return false;
+    return { ok: false, reason: `existing path is not a regular file (${describeStat(stat)})` };
   }
   const targetStat = statSync(targetPath);
-  return stat.dev === targetStat.dev && stat.ino === targetStat.ino;
+  return stat.dev === targetStat.dev && stat.ino === targetStat.ino
+    ? { ok: true }
+    : { ok: false, reason: 'existing file is not a hard link to the source (different inode)' };
+}
+
+function describeStat(stat) {
+  if (stat.isDirectory()) return 'a directory';
+  if (stat.isFile()) return 'a regular file';
+  if (stat.isSymbolicLink()) return 'a symlink/junction';
+  return 'an unknown file type';
 }
 
 function isBrokenSymlink(linkPath) {
