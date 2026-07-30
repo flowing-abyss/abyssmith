@@ -33,6 +33,7 @@ jobs:
           cache: 'pnpm'
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm run test:ai
       - run: pnpm run build
 
       # Runs wdio.conf.mts directly (not through `wdio run`), which logs the resolved
