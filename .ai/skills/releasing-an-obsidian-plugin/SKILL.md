@@ -11,7 +11,7 @@ description: Cuts a release for this Obsidian plugin — bumps the version, veri
 pnpm run release patch   # or: minor / major
 ```
 
-**Confirm with the user before running this.** It pushes a commit and a tag to the remote and (via `.github/workflows/release.yml`) creates a public draft GitHub release — a one-way action, not a local dry run.
+**Confirm with the user before running this.** It pushes a commit and a tag to the remote and (via `.github/workflows/release.yml`) creates a draft GitHub release — a one-way action, not a local dry run. (It's a draft — nothing is public until it's manually published; see "What's still manual" below.)
 
 ## What it does, in order
 
@@ -22,25 +22,40 @@ pnpm run release patch   # or: minor / major
 
 ## The command finishing is not the release finishing — verify on GitHub
 
-`pnpm run release` returning success only means the **local** steps and the push worked. The actual release isn't real until the CI it triggered has finished and produced a correct result. Do not tell the user the release shipped until you've checked this. Using the `gh` CLI:
+`pnpm run release` returning success only means the **local** steps and the push worked. The actual release isn't real until the CI it triggered has finished and produced a correct result. Do not tell the user the release shipped until you've checked this.
+
+**First, record exactly which commit and tag this release pushed** — every check below filters on these, not on "whatever the latest run happens to be" (a concurrent push, a re-run, or stale cache could otherwise point you at the wrong run):
 
 ```bash
-# 1. Watch the e2e workflow through to completion — this is the whole reason
-#    the desktop/Android matrix exists; a release without it passing hasn't
-#    actually been proven to work everywhere.
-gh run list --workflow=e2e.yml --limit=1 --json databaseId --jq '.[0].databaseId' \
-  | xargs -I{} gh run watch {} --exit-status
-
-# 2. Same for the release build itself.
-gh run list --workflow=release.yml --limit=1 --json databaseId --jq '.[0].databaseId' \
-  | xargs -I{} gh run watch {} --exit-status
-
-# 3. Confirm the release actually exists and has a real changelog body, not
-#    an empty one (a broken changelog-builder step still exits 0).
-gh release view "$(git describe --tags --exact-match HEAD)" --json isDraft,body,name
+release_sha=$(git rev-parse HEAD)
+release_tag=$(git describe --tags --exact-match HEAD)
 ```
 
-If either workflow's conclusion isn't `success`, or the release body is empty/missing, **stop and report the specific failure** — don't retry `pnpm run release` blindly (the tag already exists; a second run will fail on `--allow-same-version` or collide with the existing tag). Diagnose from the failed run's logs (`gh run view <id> --log-failed`) and fix forward.
+```powershell
+$release_sha = git rev-parse HEAD
+$release_tag = git describe --tags --exact-match HEAD
+```
+
+**Then, for each workflow, find the run that matches `$release_sha` — never `--limit=1` alone**, which can return someone else's concurrent run or a stale one:
+
+```bash
+# Works the same in bash or PowerShell — gh's own JSON/jq output, no xargs required.
+run_id=$(gh run list --workflow=e2e.yml --json databaseId,headSha \
+  --jq ".[] | select(.headSha == \"$release_sha\") | .databaseId" | head -n1)
+gh run watch "$run_id" --exit-status
+```
+
+Repeat for `release.yml` (the build itself). Do the same three steps for both:
+
+1. Get the run ID for the exact commit (`select(.headSha == "$release_sha")` — swap `.headSha` for the equivalent field name if a future `gh` version renames it).
+2. Pass that ID to `gh run watch <id> --exit-status`.
+3. Confirm the release exists at the exact tag, with a real changelog body — not an empty one (a broken changelog-builder step still exits 0):
+
+```bash
+gh release view "$release_tag" --json isDraft,body,name
+```
+
+If either workflow's conclusion isn't `success`, no run matches `$release_sha` (the push may not have triggered CI yet — wait and re-check, don't assume), or the release body is empty/missing, **stop and report the specific failure** — don't retry `pnpm run release` blindly (the tag already exists; a second run will fail on `--allow-same-version` or collide with the existing tag). Diagnose from the failed run's logs (`gh run view <id> --log-failed`) and fix forward.
 
 ## What's still manual
 

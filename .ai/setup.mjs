@@ -19,17 +19,17 @@
 // Real symlinks require Administrator privileges or Windows Developer Mode,
 // so `pnpm install` would fail on an ordinary Windows account. Directory
 // links use junctions instead (no elevation needed); file links use hard
-// links, falling back to a plain copy if the filesystem can't hard-link
-// (e.g. across volumes). Both are POSIX no-ops — `type` is ignored there.
+// links. No copy fallback: source and destination live in the same repo
+// checkout, normally the same volume, so a failed hard link is reported as
+// a conflict (with the destination and the real filesystem error) rather
+// than silently degrading to a copy that stops tracking future edits.
 
 import {
-  copyFileSync,
   existsSync,
   linkSync,
   lstatSync,
   mkdirSync,
   readdirSync,
-  readFileSync,
   readlinkSync,
   statSync,
   symlinkSync,
@@ -152,15 +152,15 @@ function createLink(linkPath, targetPath, relativeTarget, isDirTarget) {
     return;
   }
 
-  try {
-    // Hard link: no elevation needed, but same-volume only.
-    linkSync(targetPath, linkPath);
-  } catch {
-    // Cross-volume or an unsupporting filesystem — a plain copy still gets
-    // the harness working; it just won't reflect future edits to the source
-    // until setup.mjs is re-run.
-    copyFileSync(targetPath, linkPath);
-  }
+  // Hard link: no elevation needed, but same-volume only. Source and
+  // destination are both inside this one repository checkout, so they're
+  // normally on the same volume; if linkSync still fails (a genuinely
+  // unsupporting filesystem, a cross-volume checkout), let it throw —
+  // ensureLink reports the destination and the real filesystem error and
+  // treats it as a conflict. No copy fallback: a copy would stop reflecting
+  // edits to `.ai/configs` the moment it's made, silently reintroducing the
+  // exact drift this whole mirroring setup exists to prevent.
+  linkSync(targetPath, linkPath);
 }
 
 function isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSymlinkApi) {
@@ -175,20 +175,13 @@ function isExistingLinkCorrect(linkPath, targetPath, expectedLinkValue, usesSyml
     return stat.isSymbolicLink() && readlinkSync(linkPath) === expectedLinkValue;
   }
 
-  // Windows file link: correct if it's a real hard link (same inode) to the
-  // source, or — for the copy fallback — has identical content.
+  // Windows file link: correct only if it's a real hard link (same inode)
+  // to the source — no copy fallback exists to also treat as correct.
   if (!stat.isFile()) {
     return false;
   }
   const targetStat = statSync(targetPath);
-  if (stat.dev === targetStat.dev && stat.ino === targetStat.ino) {
-    return true;
-  }
-  try {
-    return readFileSync(linkPath).equals(readFileSync(targetPath));
-  } catch {
-    return false;
-  }
+  return stat.dev === targetStat.dev && stat.ino === targetStat.ino;
 }
 
 function isBrokenSymlink(linkPath) {

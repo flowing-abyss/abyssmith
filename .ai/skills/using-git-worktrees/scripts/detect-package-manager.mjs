@@ -27,22 +27,39 @@ export const LOCKFILE_MANAGER = {
  *   `packageManager` is package.json's raw "packageManager" field value
  *   (e.g. "pnpm@9.1.0"), if any. `lockfiles` is the list of lockfile
  *   basenames found in the project directory (any of LOCKFILE_MANAGER's keys).
- * @returns {{ status: 'ok' | 'conflict' | 'unknown', manager: string | null, reason: string }}
+ * @returns {{ status: 'ok' | 'conflict' | 'unsupported' | 'unknown', manager: string | null, reason: string }}
  */
 export function detectPackageManager({ packageManager, lockfiles }) {
-  const declared = parsePackageManagerField(packageManager);
+  // Three distinct states for the field: absent (null), a supported name
+  // (one of MANAGERS), or present-but-unsupported (e.g. "bun") — the third
+  // one must never be treated the same as "absent" and fall through to
+  // lockfile detection; that would silently ignore an explicit, if
+  // unsupported, declaration.
+  const declaredRaw = parsePackageManagerField(packageManager);
   const lockManagers = [...new Set(lockfiles.map((f) => LOCKFILE_MANAGER[f]).filter(Boolean))];
 
-  if (declared && lockManagers.length > 0 && !lockManagers.includes(declared)) {
+  if (declaredRaw && !MANAGERS.includes(declaredRaw)) {
     return {
-      status: 'conflict',
+      status: 'unsupported',
       manager: null,
-      reason: `package.json declares packageManager "${declared}" but found a lockfile for: ${lockManagers.join(', ')}. Resolve the conflict (update packageManager or remove the stale lockfile) before installing.`,
+      reason: `package.json declares packageManager "${declaredRaw}", which isn't pnpm, yarn, or npm. Not installing — check project instructions for the actual package manager, or ask which one to use.`,
     };
   }
 
-  if (declared) {
-    return { status: 'ok', manager: declared, reason: 'packageManager field' };
+  if (declaredRaw) {
+    // A single lockfile matching the declared manager is fine. Any other
+    // lockfile presence — a mismatch, or multiple lockfiles even when one
+    // of them matches — is a conflict, not a tiebreak in the field's favor.
+    const lockfileMismatch = lockManagers.length > 0 && lockManagers.length !== 1;
+    const lockfileWrong = lockManagers.length === 1 && lockManagers[0] !== declaredRaw;
+    if (lockfileMismatch || lockfileWrong) {
+      return {
+        status: 'conflict',
+        manager: null,
+        reason: `package.json declares packageManager "${declaredRaw}" but found lockfile(s) for: ${lockManagers.join(', ')}. Resolve the conflict (update packageManager or remove the stale lockfile) before installing.`,
+      };
+    }
+    return { status: 'ok', manager: declaredRaw, reason: 'packageManager field' };
   }
 
   if (lockManagers.length === 1) {
@@ -64,19 +81,21 @@ export function detectPackageManager({ packageManager, lockfiles }) {
   };
 }
 
+// Returns whatever's declared (supported or not) so callers can distinguish
+// "field absent" (null) from "field present but unsupported" — parsing
+// alone must not silently drop an unsupported value.
 function parsePackageManagerField(value) {
   if (!value || typeof value !== 'string') {
     return null;
   }
-  const name = value.split('@')[0].trim();
-  return MANAGERS.includes(name) ? name : null;
+  return value.split('@')[0].trim();
 }
 
 // --- CLI ---
 // Usage: detect-package-manager.mjs [dir]
 // Prints the detected manager name to stdout and exits 0 on success.
-// On "conflict" or "unknown", prints the reason to stderr and exits
-// non-zero — callers must not fall back to npm on a non-zero exit.
+// On "conflict", "unsupported", or "unknown", prints the reason to stderr
+// and exits non-zero — callers must not fall back to npm on a non-zero exit.
 if (import.meta.main) {
   const { existsSync, readFileSync } = await import('node:fs');
   const path = await import('node:path');
@@ -96,5 +115,6 @@ if (import.meta.main) {
   }
 
   console.error(`${result.status}: ${result.reason}`);
-  process.exit(result.status === 'conflict' ? 2 : 1);
+  const exitCodes = { conflict: 2, unsupported: 3, unknown: 1 };
+  process.exit(exitCodes[result.status] ?? 1);
 }

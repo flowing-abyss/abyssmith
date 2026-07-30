@@ -66,9 +66,20 @@ Answer all five before handing off to `skill:brainstorming`:
 - **Never silently lose persisted user data.** A settings/data migration
   that can't be applied cleanly must fail loudly (a clear error/Notice),
   not drop fields or reset to defaults without telling the user.
-- **The destructive step comes after the compatibility/migration step**,
-  not in the same change. Add the new form and migrate/fall back first;
-  remove the old form only in a later, separate change.
+- **A separate compatibility period is the default**, and is required when
+  any of these hold: rollback to an older plugin version is a real
+  possibility, external consumers exist (other plugins, community
+  themes/snippets), or the old form needs to keep working across more
+  than one release. In that case, add the new form and migrate/fall back
+  first; remove the old form only in a later, separate change.
+- **Migrating and removing in the same change is acceptable when all of
+  these hold:** the old persisted format is reliably recognized (never
+  silently misread as the new one), the migration is covered by a test,
+  no user data is lost, there are no external consumers, rollback
+  implications were explicitly considered (and are acceptable), and a
+  separate compatibility release genuinely adds no practical value for
+  this change. Decide this per plugin and record the reasoning in the
+  design/plan — this isn't a default to reach for casually.
 - **Old settings either load correctly or fail with a clear, actionable
   error** — never a silent partial load or a confusing crash.
 - **Every migration has a testable rollback, or the irreversibility is
@@ -82,7 +93,8 @@ Answer all five before handing off to `skill:brainstorming`:
 - [ ] A test loads data/settings in the OLD format and confirms it either
       migrates correctly or fails with a clear, actionable error — not a
       silent partial load
-- [ ] The destructive removal step is a separate, later change from the
-      compatibility/migration step, not bundled into the same one
+- [ ] If migration and removal ship in the same change, the design/plan
+      explicitly records why (all six conditions above hold) — otherwise
+      the destructive step is a separate, later change
 - [ ] Rollback behavior (old plugin version reading new-format data) was
       considered and is either safe or explicitly documented as unsafe

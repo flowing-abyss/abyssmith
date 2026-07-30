@@ -127,6 +127,24 @@ test('every path setup.mjs mirrors actually exists', () => {
   }
 });
 
+test('setup.mjs is actually idempotent: two runs both exit 0, and the second reports no conflicts', () => {
+  const setupPath = path.join(aiRoot, 'setup.mjs');
+
+  const first = spawnSync(process.execPath, [setupPath], { cwd: repoRoot, encoding: 'utf8' });
+  assert.equal(first.status, 0, `first run failed:\n${first.stdout}\n${first.stderr}`);
+
+  const second = spawnSync(process.execPath, [setupPath], { cwd: repoRoot, encoding: 'utf8' });
+  assert.equal(second.status, 0, `second run failed:\n${second.stdout}\n${second.stderr}`);
+  // Per-item lines start with "conflict "; the summary line ("0 created, N
+  // already OK, 0 conflicts.") always contains the word "conflicts" even
+  // when the count is zero, so match the line prefix, not the bare word.
+  assert.doesNotMatch(
+    second.stdout,
+    /^conflict /m,
+    `second run reported a conflict:\n${second.stdout}`,
+  );
+});
+
 // --- block-npm-commands.mjs: a few common cases, not a full parser test ---
 
 function runBlockNpmCommands(command) {
