@@ -67,8 +67,8 @@ Answer all five before handing off to `skill:brainstorming`:
   that can't be applied cleanly must fail loudly (a clear error/Notice),
   not drop fields or reset to defaults without telling the user.
 - **A separate compatibility period is the default**, and is required when
-  any of these hold: rollback to an older plugin version is a real
-  possibility, external consumers exist (other plugins, community
+  any of these hold: safe rollback to an older plugin version is an
+  explicit requirement, external consumers exist (other plugins, community
   themes/snippets), or the old form needs to keep working across more
   than one release. In that case, add the new form and migrate/fall back
   first; remove the old form only in a later, separate change.

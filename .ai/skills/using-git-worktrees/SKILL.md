@@ -108,12 +108,14 @@ never assume npm. Run this skill's `scripts/detect-package-manager.mjs .`
 `packageManager` field, then which lockfile is present, and prints the
 detected manager name on success.
 
-**If it exits non-zero** (status `unknown`: neither signal present, or
-`conflict`: `packageManager` and the lockfile disagree, or multiple
-lockfiles are present), it printed why on stderr — do not fall back to
-npm. Check project instructions (AGENTS.md/CLAUDE.md) for a stated package
-manager; if that's still silent, stop and ask which one to use before
-installing anything.
+**If it exits non-zero** — status `unknown` (neither signal present),
+`unsupported` (`packageManager` names a manager this detector doesn't
+support), or `conflict` (`packageManager` and the lockfile disagree, or
+multiple lockfiles are present) — it printed why on stderr. The same
+response applies to all three: do not install anything yet, do not fall
+back to npm. Check project instructions (AGENTS.md/CLAUDE.md) for a stated
+package manager; if that's still silent or can't be resolved safely, stop
+and ask the user which one to use before installing anything.
 
 Once a manager is known:
 

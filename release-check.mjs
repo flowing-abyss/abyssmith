@@ -7,16 +7,32 @@
 //
 // Run standalone (`pnpm run release:check`) against an already-built main.js,
 // or as part of `pnpm run verify`, which runs it right after `pnpm run build`.
+//
+// `--release-ready` additionally fails on unfilled template placeholders
+// (manifest.id/name/author/description, package.json's name) — off by default
+// so a clean, unmodified template still passes `pnpm verify`. `preversion` runs
+// with the flag, since an actual release must not ship placeholder metadata.
 
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { builtinModules } from 'node:module';
 import path from 'node:path';
 import process from 'node:process';
 
+const releaseReady = process.argv.includes('--release-ready');
+
+const PLACEHOLDER_VALUES = {
+  'manifest.json#id': 'your-id-here',
+  'manifest.json#name': 'Your Title Here',
+  'manifest.json#author': 'Your Name',
+  'manifest.json#description': 'Describe what this does in one sentence.',
+  'package.json#name': 'your-id-here',
+};
+
 // Shared with esbuild.config.mjs, which fails the build on the same
 // threshold — both read package.json#release.mainJsBudgetBytes so the two
 // checks can't silently drift apart.
-const MAIN_JS_BUDGET_BYTES = readJsonFile('package.json')?.release?.mainJsBudgetBytes ?? Infinity;
+const packageJson = readJsonFile('package.json');
+const MAIN_JS_BUDGET_BYTES = packageJson?.release?.mainJsBudgetBytes ?? Infinity;
 
 const REQUIRED_MANIFEST_STRING_FIELDS = [
   'id',
@@ -34,6 +50,10 @@ checkVersionsConsistency(manifest);
 checkMainJs(manifest);
 checkStylesCss();
 checkRequiredRepoFiles();
+checkPackageJsonManifestAgreement(manifest, packageJson);
+if (releaseReady) {
+  checkNoPlaceholders(manifest, packageJson);
+}
 
 if (errors.length > 0) {
   console.error(`release:check failed with ${errors.length} problem(s):\n`);
@@ -155,6 +175,43 @@ function checkRequiredRepoFiles() {
     if (!existsSync(file)) {
       errors.push(`${file} is missing — required for community-plugin submission.`);
     }
+  }
+}
+
+function checkPackageJsonManifestAgreement(manifest, packageJson) {
+  if (manifest === null || packageJson === null) {
+    return;
+  }
+
+  if (packageJson.name !== manifest.id) {
+    errors.push(
+      `package.json "name" ("${packageJson.name}") must equal manifest.json "id" ("${manifest.id}").`,
+    );
+  }
+
+  if (packageJson.version !== manifest.version) {
+    errors.push(
+      `package.json "version" ("${packageJson.version}") must equal manifest.json "version" ("${manifest.version}").`,
+    );
+  }
+}
+
+function checkNoPlaceholders(manifest, packageJson) {
+  if (manifest !== null) {
+    for (const field of ['id', 'name', 'author', 'description']) {
+      const placeholder = PLACEHOLDER_VALUES[`manifest.json#${field}`];
+      if (manifest[field] === placeholder) {
+        errors.push(
+          `manifest.json "${field}" is still the template placeholder ("${placeholder}").`,
+        );
+      }
+    }
+  }
+
+  if (packageJson !== null && packageJson.name === PLACEHOLDER_VALUES['package.json#name']) {
+    errors.push(
+      `package.json "name" is still the template placeholder ("${PLACEHOLDER_VALUES['package.json#name']}").`,
+    );
   }
 }
 

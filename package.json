@@ -9,7 +9,7 @@
     "dev": "node esbuild.config.mjs",
     "build": "pnpm typecheck && node esbuild.config.mjs production",
     "build:analyze": "pnpm typecheck && node esbuild.config.mjs production analyze",
-    "preversion": "pnpm run verify && pnpm run test:e2e",
+    "preversion": "pnpm run verify && node release-check.mjs --release-ready && pnpm run test:e2e",
     "version": "node version-bump.mjs && git add manifest.json versions.json",
     "postversion": "git push --follow-tags",
     "release": "pnpm version --tag-version-prefix ''",
