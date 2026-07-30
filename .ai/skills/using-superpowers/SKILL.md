@@ -37,14 +37,12 @@ This template vendors four skills beyond stock Superpowers. They aren't a separa
 | Trigger | Skill | Where it sits |
 |---------|-------|----------------|
 | An unfamiliar or version-sensitive API, a new dependency, a library/framework upgrade, a deprecated/experimental API, or existing code that looks incompatible with current docs — not routine use of an API already established in the codebase | `source-driven-development` | Runs during `writing-plans`' applicability pass and alongside implementation — cites official docs instead of implementing from memory. Verifies API usage; does not override an approved spec/plan or existing project conventions. |
-| A feature can fail silently (file I/O, network, parsing) and the user would have no way to tell why | `handling-plugin-failures` | Part of implementation, before `finishing-a-development-branch` — visible errors ship with the feature, not after. |
+| A new user-triggered or background operation could fail without a clear message or diagnostics, an existing silent catch/unhandled rejection, or a new failure boundary with no established project pattern yet | `handling-plugin-failures` | Part of implementation, before `finishing-a-development-branch` — visible errors ship with the feature, not after. Not for routine I/O repeating an already-established pattern. |
 | A change touches an external or persisted contract (settings/data format, a public API/command, a user-facing feature needing a compatibility path) — not internal refactoring or dead-code removal | `deprecation-and-migration` | Runs before `brainstorming` on contract-changing requests, to answer the five questions (what's changing, what depends on it, migration/fallback, rollback, safe-removal timing) — design approval and planning still go through `brainstorming` → `writing-plans` afterward. Not a replacement for either. |
 | Cutting a release — bumping the version, tagging, publishing | `releasing-an-obsidian-plugin` | A separate, self-contained flow after `finishing-a-development-branch`, run only on an explicit release request — not part of the build loop and never triggered automatically by finishing a branch. |
 
-A quick risk scan and context setup are no longer separate skills — the risk
-scan is a short step inside `writing-plans` (see that skill), and context
-management is the ordinary responsibility of project instructions, plans,
-task briefs, and the agent itself.
+Risk scanning is part of writing-plans. Context management stays with
+project instructions, plans, task briefs, and the agent.
 
 ## Red Flags
 
