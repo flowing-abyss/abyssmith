@@ -18,7 +18,6 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { isMainModule } from '../../../is-main-module.mjs';
 import { CliError, resolveWorkspace } from './sdd-workspace.mjs';
 
 const TASK_HEADING = /^#+[ \t]+Task[ \t]+[0-9]+/;
@@ -91,7 +90,7 @@ export function buildTaskBrief(planText, taskNumber) {
   return `${allLines.join('\n')}\n`;
 }
 
-if (isMainModule(import.meta.url)) {
+if (import.meta.main) {
   const args = process.argv.slice(2);
   if (args.length < 2 || args.length > 3) {
     console.error('usage: task-brief PLAN_FILE TASK_NUMBER [OUTFILE]');

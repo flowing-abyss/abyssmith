@@ -25,7 +25,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { isMainModule } from '../../../is-main-module.mjs';
 
 export class CliError extends Error {
   constructor(exitCode, message) {
@@ -56,7 +55,7 @@ export function resolveWorkspace(planFile) {
   return dir;
 }
 
-if (isMainModule(import.meta.url)) {
+if (import.meta.main) {
   const args = process.argv.slice(2);
   if (args.length !== 1) {
     console.error('usage: sdd-workspace PLAN_FILE');

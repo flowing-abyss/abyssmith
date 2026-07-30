@@ -16,7 +16,6 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
-import { isMainModule } from '../../../is-main-module.mjs';
 import { CliError, resolveWorkspace } from './sdd-workspace.mjs';
 
 function git(args) {
@@ -55,7 +54,7 @@ export function buildReviewPackage(base, head) {
   return { content, commitCount };
 }
 
-if (isMainModule(import.meta.url)) {
+if (import.meta.main) {
   const args = process.argv.slice(2);
   if (args.length < 3 || args.length > 4) {
     console.error('usage: review-package PLAN_FILE BASE HEAD [OUTFILE]');
