@@ -145,8 +145,11 @@ function createLink(linkPath, targetPath, relativeTarget, isDirTarget) {
 
   if (isDirTarget) {
     // `type: 'junction'` needs no elevation, unlike a real directory symlink.
-    // Node normalizes the target to an absolute path for junctions itself.
-    symlinkSync(targetPath, linkPath, 'junction');
+    // Pass an already-absolute target explicitly — real Windows CI showed
+    // the junction otherwise resolving to a nonexistent path (ENOENT on
+    // realpath), which points at Node resolving a relative target against
+    // something other than this process's cwd for junctions specifically.
+    symlinkSync(path.resolve(targetPath), linkPath, 'junction');
     return;
   }
 
