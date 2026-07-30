@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// This file lives under `.ai/agent-configs/.opencode/plugins/` and is symlinked
+// This file lives under `.ai/configs/.opencode/plugins/` and is symlinked
 // into `.opencode/plugins/`. Walk up from its real (symlink-resolved) location
 // to find the `.ai` root, so this keeps working no matter how deep it's nested.
 const hooksDir = path.join(findAiRoot(fileURLToPath(import.meta.url)), 'hooks');

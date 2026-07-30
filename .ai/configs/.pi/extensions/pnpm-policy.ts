@@ -4,7 +4,7 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// This file lives under `.ai/agent-configs/.pi/extensions/` and is symlinked
+// This file lives under `.ai/configs/.pi/extensions/` and is symlinked
 // into `.pi/extensions/`. Walk up from its real (symlink-resolved) location to
 // find the `.ai` root, so this keeps working no matter how deep it's nested.
 const hooksDir = path.join(findAiRoot(fileURLToPath(import.meta.url)), 'hooks');
