@@ -51,6 +51,7 @@ checkMainJs(manifest);
 checkStylesCss();
 checkRequiredRepoFiles();
 checkPackageJsonManifestAgreement(manifest, packageJson);
+checkReleaseTag(manifest);
 if (releaseReady) {
   checkNoPlaceholders(manifest, packageJson);
 }
@@ -192,6 +193,18 @@ function checkPackageJsonManifestAgreement(manifest, packageJson) {
   if (packageJson.version !== manifest.version) {
     errors.push(
       `package.json "version" ("${packageJson.version}") must equal manifest.json "version" ("${manifest.version}").`,
+    );
+  }
+}
+
+function checkReleaseTag(manifest) {
+  if (
+    manifest !== null &&
+    process.env.GITHUB_REF_TYPE === 'tag' &&
+    process.env.GITHUB_REF_NAME !== manifest.version
+  ) {
+    errors.push(
+      `Release tag "${process.env.GITHUB_REF_NAME}" must equal manifest.json version "${manifest.version}".`,
     );
   }
 }

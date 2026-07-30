@@ -34,6 +34,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm run ci
+          node release-check.mjs --release-ready
 
       - name: Check for optional styles
         id: styles
