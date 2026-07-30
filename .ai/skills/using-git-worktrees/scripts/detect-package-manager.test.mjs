@@ -56,11 +56,20 @@ test('packageManager field agrees with the present lockfile -> ok, no conflict',
   assert.equal(result.manager, 'pnpm');
 });
 
-test('unrecognized packageManager field value is ignored, falls through to lockfile', () => {
+test('unsupported declared manager never falls back to npm, even with a matching-looking lockfile', () => {
   const result = detectPackageManager({
     packageManager: 'bun@1.0.0',
     lockfiles: ['package-lock.json'],
   });
-  assert.equal(result.status, 'ok');
-  assert.equal(result.manager, 'npm');
+  assert.equal(result.status, 'unsupported');
+  assert.equal(result.manager, null);
+});
+
+test('declared pnpm plus a matching AND an extra lockfile is still a conflict', () => {
+  const result = detectPackageManager({
+    packageManager: 'pnpm@11',
+    lockfiles: ['pnpm-lock.yaml', 'yarn.lock'],
+  });
+  assert.equal(result.status, 'conflict');
+  assert.equal(result.manager, null);
 });
