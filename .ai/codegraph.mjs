@@ -24,12 +24,19 @@ import { fileURLToPath } from 'node:url';
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const args = process.argv.slice(2);
+const isPromptHook = args[0] === 'prompt-hook';
 const entry = resolveCodegraphEntry();
+
+// Turns the harness writes itself rather than the user: Claude Code delivers
+// a finished background task or monitor event as a `<task-notification>`
+// prompt, and CodeGraph would read the job and check names in it as a code
+// question and inject unrelated source.
+const HARNESS_MESSAGE_PREFIXES = ['<task-notification>'];
 
 if (!entry) {
   // A prompt hook must never break the prompt it runs for — no index tool
   // simply means no extra context, same as CodeGraph's own no-index path.
-  if (args[0] === 'prompt-hook') {
+  if (isPromptHook) {
     process.exit(0);
   }
   process.stderr.write(
@@ -38,8 +45,17 @@ if (!entry) {
   process.exit(1);
 }
 
+let hookPayload;
+if (isPromptHook) {
+  hookPayload = readHookPayload();
+  if (hookPayload === null || isHarnessMessage(hookPayload)) {
+    process.exit(0);
+  }
+}
+
 const result = spawnSync(process.execPath, [entry, ...args], {
-  stdio: 'inherit',
+  input: hookPayload,
+  stdio: [isPromptHook ? 'pipe' : 'inherit', 'inherit', 'inherit'],
   windowsHide: true,
   env: {
     ...process.env,
@@ -56,7 +72,28 @@ if (result.error) {
 
 // Exit 2 from a UserPromptSubmit hook blocks the prompt outright, so the
 // prompt hook always reports success; everything else keeps its real status.
-process.exit(args[0] === 'prompt-hook' ? 0 : (result.status ?? 1));
+process.exit(isPromptHook ? 0 : (result.status ?? 1));
+
+/** The hook's JSON payload from stdin, or null when there is none to read. */
+function readHookPayload() {
+  if (process.stdin.isTTY) {
+    return null; // run by hand, nothing piped in
+  }
+  try {
+    return readFileSync(0, 'utf8');
+  } catch {
+    return null;
+  }
+}
+
+function isHarnessMessage(payload) {
+  try {
+    const prompt = String(JSON.parse(payload).prompt ?? '').trimStart();
+    return HARNESS_MESSAGE_PREFIXES.some((prefix) => prompt.startsWith(prefix));
+  } catch {
+    return false; // not ours to judge — CodeGraph ignores a malformed payload
+  }
+}
 
 function resolveCodegraphEntry() {
   try {
