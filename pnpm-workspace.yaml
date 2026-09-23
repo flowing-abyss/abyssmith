@@ -18,14 +18,20 @@ overrides:
   # Security patch for a transitive dep of mocha/wdio; drop-in bump everywhere it's
   # pulled in.
   serialize-javascript: '>=7.0.7'
-  # NOT overriding brace-expansion (`pnpm audit` flags GHSA-mh99-v99m-4gvg via several
-  # minimatch@<10 chains — eslint's own resolution, and @wdio/cli's). Every minimatch
-  # below 10.x expects brace-expansion's old default-export shape; forcing the patched
-  # major (which only exports named bindings) breaks eslint and wdio outright — tried
-  # it, confirmed both failures directly. No compatible patched version exists for the
-  # old API shape. Not exploitable here: only matches this repo's own glob patterns,
-  # never attacker-controlled input. Tracked via Renovate; resolves once eslint/wdio
-  # move to minimatch@10+.
+  # brace-expansion's DoS fixes (GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895) were
+  # backported to the 1.x line minimatch@3 (eslint's) still depends on, but `pnpm
+  # update` keeps the locked 1.1.16 even though minimatch's ^1.1.7 allows the fix.
+  # Scoped to minimatch@3 so the 2.x/5.x lines keep their own, already-patched ranges.
+  'minimatch@3>brace-expansion': '^1.1.18'
+  # extract-zip, which @puppeteer/browsers@2 unzips browser/driver downloads with, has
+  # symlink path-traversal advisories (GHSA-7pqw-9j4j-h8q3, GHSA-jmr9-qjv8-65gv) and no
+  # patched release. @puppeteer/browsers@3 dropped it for the OS's own unzip/tar.exe and
+  # keeps every export @wdio/utils@9 calls (install, resolveBuildId, canDownload,
+  # computeExecutablePath, detectBrowserPlatform). Drop once @wdio/utils moves to v3.
+  '@wdio/utils>@puppeteer/browsers': '^3.2.0'
+  # @appium/base-driver pins morgan to exactly 1.11.0; 1.12 fixes log forging
+  # (GHSA-jxfw-x594-9x9m) with no API change. Drop once appium lifts the pin.
+  morgan: '^1.12.0'
 
 allowBuilds:
   # webdriverio's Firefox/Edge driver managers — Obsidian is Electron/Chromium-only,
