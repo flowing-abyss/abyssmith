@@ -31,7 +31,8 @@
     "test:ai": "node --test \".ai/**/*.test.mjs\"",
     "verify": "pnpm format:check && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm typecheck:e2e && pnpm arch && pnpm deadcode && pnpm test:ai && pnpm test:coverage && pnpm build && pnpm release:check",
     "ci": "pnpm verify",
-    "prepare": "husky && node .ai/setup.mjs"
+    "codegraph:setup": "node .ai/setup-codegraph.mjs",
+    "prepare": "husky && node .ai/setup.mjs && node .ai/setup-codegraph.mjs"
   },
   "lint-staged": {
     "*.{ts,mts,cts,js,mjs,cjs}": [
@@ -57,6 +58,7 @@
     "pnpm": ">=11"
   },
   "devDependencies": {
+    "@colbymchenry/codegraph": "1.6.0",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
     "@commitlint/types": "^21.2.3",

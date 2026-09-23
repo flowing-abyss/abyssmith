@@ -10,6 +10,9 @@
     "@wdio/local-runner",
     "@wdio/mocha-framework",
     "wdio-obsidian-reporter",
+    // Agent tooling, not plugin code: launched through .ai/codegraph.mjs by
+    // the agent MCP/hook configs and `prepare`, which knip doesn't scan.
+    "@colbymchenry/codegraph",
   ],
   "include": ["files", "dependencies", "unlisted", "unresolved", "exports", "types", "duplicates"],
 }
