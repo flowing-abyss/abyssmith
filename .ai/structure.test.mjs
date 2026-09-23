@@ -30,6 +30,10 @@ const hooksRoot = path.join(aiRoot, 'hooks');
 const configsRoot = path.join(aiRoot, 'configs');
 const codegraphLauncher = path.join(aiRoot, 'codegraph.mjs');
 
+// Windows checkouts (core.autocrlf) turn LF into CRLF; the line-based
+// assertions below read files through this so they hold on every OS.
+const readText = (file) => readFileSync(file, 'utf8').replaceAll('\r\n', '\n');
+
 // Keep test runs out of CodeGraph's anonymous usage telemetry.
 process.env.DO_NOT_TRACK = '1';
 
@@ -102,7 +106,7 @@ test('CodeGraph MCP is enabled for every MCP-capable harness through the project
   const claudeSettings = JSON.parse(
     readFileSync(path.join(configsRoot, '.claude', 'settings.json'), 'utf8'),
   );
-  const codex = readFileSync(path.join(configsRoot, '.codex', 'config.toml'), 'utf8');
+  const codex = readText(path.join(configsRoot, '.codex', 'config.toml'));
   const opencode = JSON.parse(readFileSync(path.join(configsRoot, 'opencode.json'), 'utf8'));
   const pi = JSON.parse(readFileSync(path.join(configsRoot, '.pi', 'mcp.json'), 'utf8'));
 
@@ -396,7 +400,7 @@ describe('OpenCode and Pi adapters loaded from their mirrored path', () => {
     // Pi's pnpm-policy imports Pi's runtime, so it can't be loaded here; this
     // keeps it on the same lookup the loaded adapters below exercise.
     const findAiRoot = (adapter) =>
-      readFileSync(path.join(configsRoot, adapter), 'utf8')
+      readText(path.join(configsRoot, adapter))
         .match(/^function findAiRoot\([\s\S]*?\n\}\n/m)?.[0]
         .replaceAll(': string', '');
     const [first, ...rest] = adapters.map(findAiRoot);
