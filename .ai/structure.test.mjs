@@ -364,6 +364,23 @@ describe('the OpenCode and Pi prompt-hook adapters', () => {
       undefined,
     );
   });
+
+  test('the prompt hook stays silent for harness notifications, even ones naming indexed code', () => {
+    const promptHook = (prompt) =>
+      spawnSync(process.execPath, [codegraphLauncher, 'prompt-hook'], {
+        cwd: project,
+        input: JSON.stringify({ hook_event_name: 'UserPromptSubmit', prompt, cwd: project }),
+        encoding: 'utf8',
+      });
+
+    assert.match(promptHook(structuralPrompt).stdout, /<codegraph_context/);
+
+    const notification = promptHook(
+      `<task-notification>\n<task-id>b1</task-id>\n<summary>${structuralPrompt}</summary>\n</task-notification>`,
+    );
+    assert.equal(notification.status, 0);
+    assert.equal(notification.stdout, '');
+  });
 });
 
 describe('OpenCode and Pi adapters loaded from their mirrored path', () => {
