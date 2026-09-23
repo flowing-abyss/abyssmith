@@ -23,6 +23,7 @@ for `verify` at branch completion.
 - Releasing means bumping `version` in **both** `manifest.json` and `versions.json`; the release tag must match `manifest.json`'s version exactly (no leading `v`).
 - Any network call or external service needs explicit opt-in and disclosure (README + settings) — default is local/offline. Never fetch-and-eval remote code or self-update outside normal releases.
 - Use `this.register*` (`registerEvent`, `registerDomEvent`, `registerInterval`) for anything that needs cleanup — nothing lints for a raw `addEventListener`/`setInterval` leaking past unload.
+- `docs/` (specs, plans, notes) is gitignored and stays local — never commit or force-add it.
 
 ## CodeGraph
 

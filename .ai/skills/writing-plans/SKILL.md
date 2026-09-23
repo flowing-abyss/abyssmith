@@ -17,6 +17,7 @@ Assume they are a skilled developer, but know almost nothing about our toolset o
 
 **Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`
 - (User preferences for plan location override this default)
+- `docs/` is gitignored and stays local — never commit or force-add the plan
 
 ## Scope Check
 
@@ -66,8 +67,10 @@ independently testable deliverable.
 
 **Tech Stack:** [Key technologies/libraries]
 
-**Spec:** [path to the spec/design doc this plan implements — the plan
-argues from the spec, so the spec travels with it; executors read both]
+**Spec:** [absolute path to the spec/design doc this plan implements — the
+plan argues from the spec, so the spec travels with it; executors read both.
+Absolute because `docs/` is gitignored: a worktree executing this plan has
+no copy of it]
 
 ## Global Constraints
 

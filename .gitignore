@@ -29,6 +29,9 @@ coverage/
 tests/e2e/wdio-logs/
 allure-results/
 
+# Local-only specs, plans, and notes (Superpowers writes them under docs/)
+/docs/
+
 # AI — anchored (leading /) so these only match the generated symlinks at
 # the repo root, not the real files nested under .ai/configs/ that share
 # the same directory names (e.g. .ai/configs/.claude/, .ai/configs/.codex/).
