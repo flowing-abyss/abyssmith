@@ -169,6 +169,15 @@ run `pnpm exec codegraph sync` in that checkout (again after edits). If the
 local DB is absent, sync fails, or results warn of another worktree or stale
 files, use Read/Search rather than relying on that graph.
 
+### Local docs
+
+This project gitignores `docs/`, so a new worktree has none of the specs and
+plans written in the main checkout. Pass them by absolute path — including
+as `PLAN_FILE` to the execution skills' scripts — and never copy, symlink,
+or commit them into the worktree. Anything you write under the worktree's
+own `docs/` exists only there; finishing-a-development-branch moves it back
+to the main checkout before removing the worktree.
+
 ## Step 3: Verify Clean Baseline
 
 Run tests using the same package manager detected in Step 2 (`pnpm test`,
