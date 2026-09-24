@@ -533,6 +533,23 @@ test('block-npm-commands.mjs is registered in all four harness configs', () => {
   }
 });
 
+test('the commit-msg hook strips agent attribution before commitlint reads the message', () => {
+  const commands = readText(path.join(repoRoot, '.husky', 'commit-msg'))
+    .split('\n')
+    .filter((line) => line.trim() && !line.startsWith('#'));
+  assert.deepEqual(commands, [
+    'node .ai/hooks/strip-agent-attribution.mjs "$1"',
+    'pnpm exec commitlint --edit "$1"',
+  ]);
+});
+
+test('Claude Code adds no attribution of its own to commits or pull requests', () => {
+  const claude = JSON.parse(
+    readFileSync(path.join(configsRoot, '.claude', 'settings.json'), 'utf8'),
+  );
+  assert.deepEqual(claude.attribution, { commit: '', pr: '', sessionUrl: false });
+});
+
 test('package.json defines the canonical verify script', () => {
   const packageJson = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
   assert.ok(packageJson.scripts?.verify, 'package.json is missing a "verify" script');
