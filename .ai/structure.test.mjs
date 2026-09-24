@@ -791,4 +791,75 @@ describe('strip-agent-attribution, the commit-msg hook', () => {
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, /usage/i);
   });
+
+  // CI's backstop for commits that skipped the hook (--no-verify, commits made
+  // through the GitHub API). The history below lives in a throwaway repo under
+  // the OS temp dir and is deleted with it — nothing here is ever pushed.
+  describe('--check, which CI runs over a pull request', () => {
+    let repo;
+    let base;
+
+    before(() => {
+      repo = path.join(workDir, 'history');
+      mkdirSync(repo);
+      const git = (...args) =>
+        execFileSync(
+          'git',
+          [
+            '-c',
+            'user.name=Test',
+            '-c',
+            'user.email=test@example.com',
+            '-c',
+            'commit.gpgsign=false',
+            '-c',
+            `core.hooksPath=${path.join(workDir, 'no-hooks')}`,
+            ...args,
+          ],
+          { cwd: repo, encoding: 'utf8', stdio: 'pipe' },
+        ).trim();
+      git('init', '-q');
+      git('commit', '-q', '--allow-empty', '-m', 'chore: start');
+      base = git('rev-parse', 'HEAD');
+      git('commit', '-q', '--allow-empty', '-m', 'feat: clean change');
+      git(
+        'commit',
+        '-q',
+        '--allow-empty',
+        '-m',
+        'fix: change made by an agent',
+        '-m',
+        'Co-authored-by: Codex <noreply@openai.com>',
+      );
+    });
+
+    const check = (range) =>
+      spawnSync(process.execPath, [script, '--check', range], { cwd: repo, encoding: 'utf8' });
+
+    test('fails on a range with agent credit and names the commit that carries it', () => {
+      const result = check(`${base}..HEAD`);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /fix: change made by an agent/);
+      assert.doesNotMatch(result.stderr, /feat: clean change/);
+    });
+
+    test('passes a range whose messages are clean', () => {
+      const result = check(`${base}..HEAD~1`);
+
+      assert.equal(result.status, 0, result.stderr);
+    });
+
+    test('runs in CI over the commits of every pull request', () => {
+      const workflow = readText(path.join(repoRoot, '.github', 'workflows', 'ci.yml'));
+
+      assert.ok(workflow.includes('BASE_SHA: ${{ github.event.pull_request.base.sha }}'));
+      assert.ok(workflow.includes('HEAD_SHA: ${{ github.event.pull_request.head.sha }}'));
+      assert.ok(
+        workflow.includes(
+          'run: node .ai/hooks/strip-agent-attribution.mjs --check "$BASE_SHA..$HEAD_SHA"',
+        ),
+      );
+    });
+  });
 });
