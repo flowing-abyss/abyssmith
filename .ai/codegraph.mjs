@@ -33,6 +33,15 @@ const entry = resolveCodegraphEntry();
 // question and inject unrelated source.
 const HARNESS_MESSAGE_PREFIXES = ['<task-notification>'];
 
+// T3 Code sends a reply that quotes an earlier answer as the user's text with
+// an inline `[assistant-quote-N]` marker, then an `<assistant_citations>`
+// block: the quoted answer and the thread's bookkeeping as JSON, with the
+// user's comment on the quote inside. The agent already has that answer, and
+// CodeGraph would read its symbol names and ids as a fresh code question — so
+// only the user's own text and comments go through.
+const CITATIONS_BLOCK = /<assistant_citations>([\s\S]*?)<\/assistant_citations>/g;
+const CITATION_MARKER = /\[assistant-quote-\d+\]/g;
+
 if (!entry) {
   // A prompt hook must never break the prompt it runs for — no index tool
   // simply means no extra context, same as CodeGraph's own no-index path.
@@ -47,8 +56,8 @@ if (!entry) {
 
 let hookPayload;
 if (isPromptHook) {
-  hookPayload = readHookPayload();
-  if (hookPayload === null || isHarnessMessage(hookPayload)) {
+  hookPayload = withUserWordsOnly(readHookPayload());
+  if (hookPayload === null) {
     process.exit(0);
   }
 }
@@ -86,12 +95,51 @@ function readHookPayload() {
   }
 }
 
-function isHarnessMessage(payload) {
+/**
+ * The hook payload with its prompt cut down to what the user wrote, or null
+ * when that leaves nothing for CodeGraph to read.
+ */
+function withUserWordsOnly(payload) {
+  if (payload === null) {
+    return null;
+  }
+  let hook;
   try {
-    const prompt = String(JSON.parse(payload).prompt ?? '').trimStart();
-    return HARNESS_MESSAGE_PREFIXES.some((prefix) => prompt.startsWith(prefix));
+    hook = JSON.parse(payload);
   } catch {
-    return false; // not ours to judge — CodeGraph ignores a malformed payload
+    return payload; // not ours to judge — CodeGraph ignores a malformed payload
+  }
+  if (typeof hook?.prompt !== 'string') {
+    return payload;
+  }
+  if (HARNESS_MESSAGE_PREFIXES.some((prefix) => hook.prompt.trimStart().startsWith(prefix))) {
+    return null;
+  }
+  if (!hook.prompt.includes('<assistant_citations>')) {
+    return payload;
+  }
+
+  const comments = [];
+  const ownText = hook.prompt
+    .replace(CITATIONS_BLOCK, (_block, body) => {
+      comments.push(...citationComments(body));
+      return '';
+    })
+    .replace(CITATION_MARKER, '')
+    .trim();
+  const prompt = [ownText, ...comments].filter(Boolean).join('\n\n');
+  return prompt ? JSON.stringify({ ...hook, prompt }) : null;
+}
+
+/** The user's comments from a citations block's JSON array, which follows its preamble. */
+function citationComments(blockBody) {
+  try {
+    const citations = JSON.parse(blockBody.slice(blockBody.indexOf('\n[')));
+    return citations
+      .map((entry) => entry?.citation?.comment)
+      .filter((comment) => typeof comment === 'string' && comment.trim());
+  } catch {
+    return []; // an unfamiliar layout drops the block rather than guessing at it
   }
 }
 
