@@ -99,7 +99,7 @@ if (import.meta.main) {
     process.exit(status);
   }
 
-  const last = lines.filter((line) => line.trim() !== '').at(-1) ?? '';
+  const last = lines.filter((line) => line.trim() !== '').at(-1) ?? '(no output)';
   if (!existsSync(ledgerPath)) {
     writeFileSync(ledgerPath, `# SDD ledger — plan: ${planFile}\n`);
   }

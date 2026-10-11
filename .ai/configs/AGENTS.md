@@ -25,6 +25,13 @@ for `verify` at branch completion.
 - Use `this.register*` (`registerEvent`, `registerDomEvent`, `registerInterval`) for anything that needs cleanup — nothing lints for a raw `addEventListener`/`setInterval` leaking past unload.
 - `docs/` (specs, plans, notes) is gitignored and stays local — never commit or force-add it.
 
+## Human-facing writing
+
+Use `humanizer` before finalizing pull request descriptions, release notes,
+or authorized README edits. Preserve technical facts, commands, links, and
+verification limits; embedded use returns only the final text. This does not
+authorize editing a README excluded by the current task.
+
 ## CodeGraph
 
 Prefer CodeGraph for dependency discovery, blast-radius analysis, unfamiliar code,
