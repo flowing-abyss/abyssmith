@@ -22,11 +22,11 @@ const isWindows = process.platform === 'win32';
 
 /** The command the way a person would type it, for the ledger line. */
 export function renderCommand(argv) {
-  return argv.map((arg) => (/[\s";|&]/.test(arg) ? `'${arg}'` : arg)).join(' ');
+  return argv.map((arg) => (arg === '' || /[\s";|&]/.test(arg) ? `'${arg}'` : arg)).join(' ');
 }
 
 function windowsCommandLine(argv) {
-  return argv.map((arg) => (/[\s"&|<>^]/.test(arg) ? `"${arg.replaceAll('"', '""')}"` : arg)).join(' ');
+  return argv.map((arg) => (arg === '' || /[\s"&|<>^]/.test(arg) ? `"${arg.replaceAll('"', '""')}"` : arg)).join(' ');
 }
 
 function git(args) {
