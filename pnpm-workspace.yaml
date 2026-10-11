@@ -2,17 +2,16 @@ packages:
   - .
 
 minimumReleaseAge: 1440
-minimumReleaseAgeExclude:
-  - obsidian-test-mocks@3.7.0
 blockExoticSubdeps: true
 saveExact: true
+strictPeerDependencies: true
 peerDependencyRules:
-  # eslint-plugin-obsidianmd@0.4.1 pins its `obsidian` peer to the exact version that
+  # eslint-plugin-obsidianmd@0.4.2 pins its `obsidian` peer to the exact version that
   # was current when it was published — it only reads `obsidian`'s stable, long-lived
   # PluginManifest type shape, not runtime behavior, so a newer `obsidian` (which this
-  # template intentionally tracks via "latest" for current API typings) is fine here.
+  # template pins for reproducible API typings) is fine here.
   allowedVersions:
-    'eslint-plugin-obsidianmd>obsidian': '*'
+    'eslint-plugin-obsidianmd@0.4.2>obsidian': '1.14.4'
 
 overrides:
   # Security patch for a transitive dep of mocha/wdio; drop-in bump everywhere it's
@@ -32,6 +31,16 @@ overrides:
   # @appium/base-driver pins morgan to exactly 1.11.0; 1.12 fixes log forging
   # (GHSA-jxfw-x594-9x9m) with no API change. Drop once appium lifts the pin.
   morgan: '^1.12.0'
+
+  # obsidian-test-mocks pins Moment 2.29.4; 2.31.0 fixes locale path traversal
+  # (GHSA-4p3w-j4w9-5jqw). Remove when the mock package lifts its pin.
+  'obsidian-test-mocks>moment': '^2.31.0'
+  # Android screenshot tooling pins sharp 0.35.4; patch its librsvg dependency
+  # (GHSA-wq5f-xc86-pv6w) without changing the sharp minor version.
+  'appium-uiautomator2-driver>sharp': '^0.35.5'
+  # @appium/support pins shell-quote 1.10.0; 1.12 includes the command injection
+  # fix (GHSA-pqg4-j6r4-53mv). Remove when Appium updates its pin.
+  '@appium/support>shell-quote': '^1.12.0'
 
 allowBuilds:
   # webdriverio's Firefox/Edge driver managers — Obsidian is Electron/Chromium-only,

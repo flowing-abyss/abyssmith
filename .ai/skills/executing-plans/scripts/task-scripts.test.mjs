@@ -129,3 +129,13 @@ test('renderCommand quotes only the arguments that need it', () => {
   assert.equal(renderCommand(['pnpm', 'test', '--', 'src/a b.test.ts']), "pnpm test -- 'src/a b.test.ts'");
   assert.equal(renderCommand(['pnpm', 'exec', 'vitest', 'run']), 'pnpm exec vitest run');
 });
+
+test('task-done records silent and whitespace-only passing commands', () => {
+  const base = git('rev-parse', 'HEAD');
+  for (const script of ['', "console.log('  '); console.log('')"]) {
+    const result = run('task-done.mjs', 'plan.md', '2', base, '--', process.execPath, '-e', script);
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /→ \(no output\)\)/);
+    assert.match(readFileSync(path.join(workspace(), 'progress.md'), 'utf8'), /→ \(no output\)\)/);
+  }
+});

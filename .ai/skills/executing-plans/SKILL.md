@@ -233,6 +233,10 @@ mark the todo complete and take the next task.
 
 ## Final Review
 
+Explicit user model routing and the actual spawn schema take precedence over
+role recommendations below. Full-history forks inherit settings; use an
+isolated fork for permitted model and effort overrides.
+
 Run `node ../subagent-driven-development/scripts/review-package.mjs PLAN_FILE MERGE_BASE HEAD`
 (MERGE_BASE = the commit the branch started from, e.g.
 `git merge-base main HEAD`) and review from the file it prints.
@@ -245,9 +249,8 @@ package path, the plan and spec paths, the plan's Review Focus section
 verbatim if it has one (the input classes and failure modes the plan's
 tests do not exercise — the reviewer checks each deliberately), and a
 pointer to the ledger's `Ruling:` lines so it can weigh the calls you
-made. Specify the model
-explicitly; an omitted model inherits the session's, which may not be the
-most capable. This is the one fresh context the whole run buys. Do not
+made. Specify model and effort explicitly only when user routing permits
+and the fork schema supports overrides; otherwise inherit the session. This is the one fresh context the whole run buys. Do not
 skip it, and do not replace it with your own read of the diff.
 
 **Without a subagent tool:** read code-reviewer.md and perform that review

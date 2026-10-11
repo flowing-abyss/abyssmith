@@ -24,11 +24,12 @@ import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const aiRoot = path.dirname(fileURLToPath(import.meta.url));
+const aiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.join(aiRoot, '..');
 const skillsRoot = path.join(aiRoot, 'skills');
 const hooksRoot = path.join(aiRoot, 'hooks');
 const configsRoot = path.join(aiRoot, 'configs');
+const scriptsRoot = path.join(aiRoot, 'scripts');
 const codegraphLauncher = path.join(aiRoot, 'codegraph.mjs');
 
 // Windows checkouts (core.autocrlf) turn LF into CRLF; the line-based
@@ -57,8 +58,8 @@ test('relative Markdown links in skills resolve to existing files', () => {
   const problems = [];
 
   for (const file of markdownFiles) {
-    // writing-skills is vendored upstream meta-documentation about how to
-    // write skills; its links are illustrative filenames for a
+    // writing-skills includes examples about how to write skills; its
+    // links are illustrative filenames for a
     // hypothetical skill package, not real navigation targets here.
     if (path.relative(skillsRoot, file).startsWith(`writing-skills${path.sep}`)) continue;
 
@@ -162,8 +163,8 @@ test('the CodeGraph prompt hook is registered in all four harness configs', () =
     ),
   );
   for (const adapter of [
-    path.join(configsRoot, '.opencode', 'plugins', 'codegraph.js'),
-    path.join(configsRoot, '.pi', 'extensions', 'codegraph.ts'),
+    path.join(scriptsRoot, 'opencode', 'codegraph.js'),
+    path.join(scriptsRoot, 'pi', 'codegraph.ts'),
   ]) {
     assert.match(readFileSync(adapter, 'utf8'), /'codegraph\.mjs'\)[\s\S]*'prompt-hook'/, adapter);
   }
@@ -307,7 +308,7 @@ describe('the OpenCode and Pi prompt-hook adapters', () => {
   after(() => rmSync(project, { recursive: true, force: true }));
 
   test('OpenCode attaches the context as a synthetic part with a new ascending part id', async () => {
-    const pluginUrl = pathToFileURL(path.join(configsRoot, '.opencode', 'plugins', 'codegraph.js'));
+    const pluginUrl = pathToFileURL(path.join(scriptsRoot, 'opencode', 'codegraph.js'));
     const { CodegraphPromptContext } = await import(pluginUrl.href);
     const hooks = await CodegraphPromptContext({ directory: project });
     const userPart = {
@@ -334,7 +335,7 @@ describe('the OpenCode and Pi prompt-hook adapters', () => {
 
   test('Pi injects the context as a hidden message before the agent starts', async () => {
     let handler;
-    const extensionUrl = pathToFileURL(path.join(configsRoot, '.pi', 'extensions', 'codegraph.ts'));
+    const extensionUrl = pathToFileURL(path.join(scriptsRoot, 'pi', 'codegraph.ts'));
     const { default: register } = await import(extensionUrl.href);
     register({ on: (event, fn) => event === 'before_agent_start' && (handler = fn) });
 
@@ -346,7 +347,7 @@ describe('the OpenCode and Pi prompt-hook adapters', () => {
   });
 
   test('both adapters add nothing for a prompt with no structural question', async () => {
-    const pluginUrl = pathToFileURL(path.join(configsRoot, '.opencode', 'plugins', 'codegraph.js'));
+    const pluginUrl = pathToFileURL(path.join(scriptsRoot, 'opencode', 'codegraph.js'));
     const { CodegraphPromptContext } = await import(pluginUrl.href);
     const hooks = await CodegraphPromptContext({ directory: project });
     const output = {
@@ -357,7 +358,7 @@ describe('the OpenCode and Pi prompt-hook adapters', () => {
     assert.equal(output.parts.length, 1);
 
     let handler;
-    const extensionUrl = pathToFileURL(path.join(configsRoot, '.pi', 'extensions', 'codegraph.ts'));
+    const extensionUrl = pathToFileURL(path.join(scriptsRoot, 'pi', 'codegraph.ts'));
     const { default: register } = await import(extensionUrl.href);
     register({ on: (_event, fn) => (handler = fn) });
     assert.equal(
@@ -457,7 +458,13 @@ describe('OpenCode and Pi adapters loaded from their mirrored path', () => {
     writeFileSync(path.join(checkout, 'package.json'), '{ "type": "module" }\n');
     for (const adapter of adapters) {
       mkdirSync(path.dirname(path.join(checkout, adapter)), { recursive: true });
-      copyFileSync(path.join(configsRoot, adapter), path.join(checkout, adapter));
+      copyFileSync(
+        path.join(
+          scriptsRoot,
+          adapter.replace(/^\./, '').replace('/plugins/', '/').replace('/extensions/', '/'),
+        ),
+        path.join(checkout, adapter),
+      );
     }
     // A stub launcher shows which checkout's `.ai` the adapters picked.
     mkdirSync(path.join(checkout, '.ai'), { recursive: true });
@@ -473,7 +480,12 @@ describe('OpenCode and Pi adapters loaded from their mirrored path', () => {
     // Pi's pnpm-policy imports Pi's runtime, so it can't be loaded here; this
     // keeps it on the same lookup the loaded adapters below exercise.
     const findAiRoot = (adapter) =>
-      readText(path.join(configsRoot, adapter))
+      readText(
+        path.join(
+          scriptsRoot,
+          adapter.replace(/^\./, '').replace('/plugins/', '/').replace('/extensions/', '/'),
+        ),
+      )
         .match(/^function findAiRoot\([\s\S]*?\n\}\n/m)?.[0]
         .replaceAll(': string', '');
     const [first, ...rest] = adapters.map(findAiRoot);
@@ -526,8 +538,8 @@ test('block-npm-commands.mjs is registered in all four harness configs', () => {
   const configFiles = [
     path.join(configsRoot, '.claude', 'settings.json'),
     path.join(configsRoot, '.codex', 'hooks.json'),
-    path.join(configsRoot, '.opencode', 'plugins', 'pnpm-policy.js'),
-    path.join(configsRoot, '.pi', 'extensions', 'pnpm-policy.ts'),
+    path.join(scriptsRoot, 'opencode', 'pnpm-policy.js'),
+    path.join(scriptsRoot, 'pi', 'pnpm-policy.ts'),
   ];
   for (const file of configFiles) {
     assert.match(readFileSync(file, 'utf8'), /block-npm-commands\.mjs/, file);

@@ -183,6 +183,10 @@ implementation.
 
 ## Model Selection
 
+Explicit user routing and the actual tool schema take precedence over these
+recommendations. Full-history forks inherit model/effort and forbid overrides;
+use an isolated fork for permitted explicit overrides.
+
 Use the least powerful model that can handle each role to conserve cost and increase speed.
 
 **Mechanical implementation tasks** (isolated functions, clear specs, 1-2 files): use a fast, cheap model. Most implementation tasks are mechanical when the plan is well-specified.
@@ -201,9 +205,9 @@ small fix diffs take a cheap-to-mid tier.
 **Fix-loop escalation (rounds 4-5)**: use a model at least one tier above
 the implementer that got stuck.
 
-**Always specify the model explicitly when dispatching a subagent.** An
-omitted model inherits your session's model — often the most capable and
-most expensive — which silently defeats this section.
+**Specify model and effort explicitly when routing is authorized and the fork
+schema permits overrides.** Otherwise inherit the session settings. Check
+the current allowlist; never force unsupported override fields.
 
 **Turn count beats token price.** Wall-clock and context cost scale with how
 many turns a subagent takes, and the cheapest models routinely take 2-3× the
@@ -236,12 +240,11 @@ and is re-read on every later turn. Hand artifacts over as files.
 short timeouts, and never sit in one silent, open-ended wait either.
 While you have local work — ledger updates, packaging the next review,
 reading reports — keep working; child results arrive on their own.
-When you are genuinely idle, wait in bounded stretches (five to ten
-minutes, where your platform allows), and between stretches post one
-line of status and reconcile your live children: list them, and chase
-any that finished without reporting. A bounded stretch keeps nearly
-all of a long wait's efficiency while guaranteeing a stuck or lost
-child is noticed within minutes, not at the end of the session.
+When genuinely idle, wait in bounded stretches permitted by the current
+tool schema and developer instructions. Preserve the communication cadence
+and maximum blocking wait (60 seconds in this harness). Between stretches,
+post useful status and reconcile live children: list them and follow up with
+any that finished without reporting.
 
 ### 1. Dispatch the implementer
 

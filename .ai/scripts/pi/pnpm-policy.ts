@@ -5,10 +5,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// This file lives under `.ai/configs/.pi/extensions/` and is mirrored into
-// `.pi/extensions/` — symlinked on POSIX, hard-linked on Windows. Loaders
-// disagree on whether `import.meta.url` resolves the symlink (Pi's doesn't),
-// so walk up until a directory either is the `.ai` root or contains it.
+// This file lives under `.ai/scripts/pi/` and is symlinked into
+// `.pi/extensions/` (hard-linked on Windows). Loaders can report either
+// the source or mirrored path, so walk up to `.ai` or an ancestor containing it.
 const hooksDir = path.join(findAiRoot(fileURLToPath(import.meta.url)), 'hooks');
 
 function findAiRoot(fromPath: string): string {

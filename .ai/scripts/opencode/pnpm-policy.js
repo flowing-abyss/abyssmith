@@ -3,10 +3,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// This file lives under `.ai/configs/.opencode/plugins/` and is mirrored into
-// `.opencode/plugins/` — symlinked on POSIX, hard-linked on Windows. Loaders
-// disagree on whether `import.meta.url` resolves the symlink (Pi's doesn't),
-// so walk up until a directory either is the `.ai` root or contains it.
+// This file lives under `.ai/scripts/opencode/` and is symlinked into
+// `.opencode/plugins/` (hard-linked on Windows). Loaders can report either
+// the source or mirrored path, so walk up to `.ai` or an ancestor containing it.
 const hooksDir = path.join(findAiRoot(fileURLToPath(import.meta.url)), 'hooks');
 
 function findAiRoot(fromPath) {

@@ -274,6 +274,9 @@ them to review the plan and confirm it captures what they want; wait for that
 review before implementation, then use the preserved method. Otherwise, ask
 them to review the plan and choose an execution method before implementation.
 
+Explicit user routing and the actual tool schema take precedence over model
+recommendations in these options.
+
 **When no execution method has already been supplied:**
 
 **"Plan complete and saved to `docs/superpowers/plans/<filename>.md`. Please review the plan. Which execution approach would you prefer?**
