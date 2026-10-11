@@ -2,12 +2,10 @@
   "superpowers": {
     "repository": "https://github.com/obra/superpowers",
     "ref": "v7.0.0",
-    "commit": "bb92a77741419a4ab5f06e711a283343f1ada0c3",
-    "license": "skills/LICENSE.superpowers"
+    "commit": "bb92a77741419a4ab5f06e711a283343f1ada0c3"
   },
   "humanizer": {
     "repository": "https://github.com/blader/humanizer",
-    "commit": "225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8",
-    "license": "skills/humanizer/LICENSE"
+    "commit": "225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8"
   }
 }

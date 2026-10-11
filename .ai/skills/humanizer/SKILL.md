@@ -6,8 +6,8 @@ description: Use when drafting or editing pull request descriptions, release not
 # Humanizer for Plugin Writing
 
 Apply the guidance in [references/patterns.md](references/patterns.md), adapted
-from [blader/humanizer](https://github.com/blader/humanizer). Its MIT license
-is in [LICENSE](LICENSE). Read the reference before editing prose.
+from [blader/humanizer](https://github.com/blader/humanizer).
+Read the reference before editing prose.
 
 ## Workflow
 
