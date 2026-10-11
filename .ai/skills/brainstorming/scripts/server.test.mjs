@@ -20,7 +20,6 @@ test('the companion serves dollar sequences in a fragment literally', async (t) 
       BRAINSTORM_TOKEN: 'test-literal-token',
       BRAINSTORM_OWNER_PID: String(process.pid),
       BRAINSTORM_OPEN: '0',
-      SUPERPOWERS_DISABLE_TELEMETRY: '1',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -57,5 +56,5 @@ test('the companion serves dollar sequences in a fragment literally', async (t) 
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.ok(html.includes(fragment), 'the served HTML retains the complete fragment');
-  assert.ok(html.includes('Superpowers v7.0.0'), 'the companion reports its vendored source version');
+  assert.doesNotMatch(html, /(?:src|href)=["']https?:\/\//, 'the companion frame stays local');
 });

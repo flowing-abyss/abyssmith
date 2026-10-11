@@ -1,15 +1,3 @@
----
-name: humanizer
-description: |
-  Rewrite AI-sounding text so it reads like the writer without changing what it says.
-  Use when editing or reviewing prose for AI tells: not-X-but-Y contrasts, one-line
-  closers, staged openers, forced triads, dashes everywhere, inflated claims, sales
-  language, stock AI words, bold labels, or filler. Based on Wikipedia's "Signs of AI writing."
-license: MIT
-metadata:
-  version: "3.1.0"
----
-
 # Humanizer: remove AI writing patterns
 
 Rewrite AI-sounding text so it reads like the writer, not a chatbot. Keep what it says. Do not make anything up.
@@ -391,7 +379,3 @@ Keep the details that carry the writer's voice unless they hurt the meaning:
 - Dated, era-bound references: slang, memes, and in-jokes that map to a specific year and subculture.
 - A first-person choice the writer can explain.
 - A genuine aside, parenthetical, or self-correction: "(I keep wanting to say 'almost' here, but it really was certain.)"
-
-## Source
-
-The patterns come from Wikipedia's ["Signs of AI writing"](https://en.wikipedia.org/wiki/Wikipedia:Signs_of_AI_writing), maintained by WikiProject AI Cleanup, and from reviews of AI-generated text on Wikipedia and elsewhere.

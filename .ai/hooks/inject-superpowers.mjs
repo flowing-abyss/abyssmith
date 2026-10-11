@@ -4,12 +4,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-// SessionStart hook — Node port of obra/superpowers' hooks/session-start
-// (https://github.com/obra/superpowers), adapted so it works from a vendored
-// copy of the skill instead of an installed Claude Code plugin: no plugin
-// means no `CLAUDE_PLUGIN_ROOT`, so this always emits the Claude
-// Code/Codex CLI `hookSpecificOutput.additionalContext` shape rather than
-// upstream's multi-platform branch.
+// SessionStart hook: injects this checkout's using-superpowers skill into
+// hookSpecificOutput.additionalContext.
 //
 // Forces the model to read the `using-superpowers` skill at the start of
 // every session, so skill-checking isn't left to the model deciding to call

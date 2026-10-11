@@ -15,7 +15,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-const aiRoot = path.dirname(fileURLToPath(import.meta.url));
+const aiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 // --- setup.mjs on a temporary checkout: the links it replaces and refuses ---
 
 const posixLinksOnly = {

@@ -24,7 +24,7 @@ import path from 'node:path';
 import { after, before, describe, test } from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const aiRoot = path.dirname(fileURLToPath(import.meta.url));
+const aiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = path.join(aiRoot, '..');
 const skillsRoot = path.join(aiRoot, 'skills');
 const hooksRoot = path.join(aiRoot, 'hooks');
@@ -58,8 +58,8 @@ test('relative Markdown links in skills resolve to existing files', () => {
   const problems = [];
 
   for (const file of markdownFiles) {
-    // writing-skills is vendored upstream meta-documentation about how to
-    // write skills; its links are illustrative filenames for a
+    // writing-skills includes examples about how to write skills; its
+    // links are illustrative filenames for a
     // hypothetical skill package, not real navigation targets here.
     if (path.relative(skillsRoot, file).startsWith(`writing-skills${path.sep}`)) continue;
 

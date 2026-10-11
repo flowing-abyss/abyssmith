@@ -9,7 +9,7 @@ test('bootstrap loads its checkout skill from a subdirectory with no Git on PATH
   delete env.CLAUDE_PROJECT_DIR;
   const result = spawnSync(
     process.execPath,
-    [fileURLToPath(new URL('inject-superpowers.mjs', import.meta.url))],
+    [fileURLToPath(new URL('../hooks/inject-superpowers.mjs', import.meta.url))],
     {
       cwd: fileURLToPath(new URL('../skills', import.meta.url)),
       env,
